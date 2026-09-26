@@ -1,0 +1,211 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum OrgType {
+  CENTRAL
+  STATE
+}
+
+enum SourceType {
+  OFFICIAL_NOTIFICATION
+  OFFICIAL_GUIDELINE
+  OFFICIAL_APPLICATION_PORTAL
+  OTHER_OFFICIAL
+}
+
+model Organization {
+  id               String         @id @default(cuid())
+  name             String         @unique
+  type             OrgType        @default(CENTRAL)
+  parentOrgId      String?        @map("parent_org_id")
+  parentOrg        Organization?  @relation("OrgHierarchy", fields: [parentOrgId], references: [id])
+  childOrgs        Organization[] @relation("OrgHierarchy")
+  exams            Exam[]
+  schemes          Scheme[]
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  @@map("organizations")
+}
+
+model State {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  code      String   @unique
+  exams     Exam[]
+  schemes   Scheme[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("states")
+}
+
+model Category {
+  id        String           @id @default(cuid())
+  name      String           @unique
+  slug      String           @unique
+  exams     ExamCategory[]
+  schemes   SchemeCategory[]
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  @@map("categories")
+}
+
+model Exam {
+  id                    String                @id @default(cuid())
+  name                  String
+  slug                  String                @unique
+  conductingBodyId      String                @map("conducting_body_id")
+  conductingBody        Organization          @relation(fields: [conductingBodyId], references: [id])
+  department            String?
+  educationEligibility  String                @map("education_eligibility")
+  ageEligibility        String                @map("age_eligibility")
+  stateId               String?               @map("state_id")
+  state                 State?                @relation(fields: [stateId], references: [id])
+  examDate              DateTime?             @map("exam_date")
+  admitCardDate         DateTime?             @map("admit_card_date")
+  resultDate            DateTime?             @map("result_date")
+  resultStatus          String?               @map("result_status")
+  applicationFee        String?               @map("application_fee")
+  vacancyCount          Int?                  @map("vacancy_count")
+  officialApplyUrl      String                @map("official_apply_url")
+  isPublished           Boolean               @default(true) @map("is_published")
+  isArchived            Boolean               @default(false) @map("is_archived")
+  applicationPeriod     ApplicationPeriod?
+  sources               Source[]
+  verifications         Verification[]
+  eligibilityCriteria   EligibilityCriteria?
+  categories            ExamCategory[]
+  createdAt             DateTime              @default(now()) @map("created_at")
+  updatedAt             DateTime              @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@index([stateId])
+  @@map("exams")
+}
+
+model Scheme {
+  id                   String                @id @default(cuid())
+  name                 String
+  slug                 String                @unique
+  departmentId         String                @map("department_id")
+  department           Organization          @relation(fields: [departmentId], references: [id])
+  whoCanBenefit        String                @map("who_can_benefit")
+  eligibility          String
+  benefits             String
+  requiredDocuments    String                @map("required_documents")
+  applicationProcess   String                @map("application_process")
+  deadline             DateTime?             @map("deadline")
+  stateId              String?               @map("state_id")
+  state                State?                @relation(fields: [stateId], references: [id])
+  officialApplyUrl     String                @map("official_apply_url")
+  isPublished          Boolean               @default(true) @map("is_published")
+  isArchived           Boolean               @default(false) @map("is_archived")
+  applicationPeriod    ApplicationPeriod?
+  sources              Source[]
+  verifications        Verification[]
+  eligibilityCriteria  EligibilityCriteria?
+  categories           SchemeCategory[]
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@index([stateId])
+  @@index([deadline])
+  @@map("schemes")
+}
+
+model ApplicationPeriod {
+  id        String    @id @default(cuid())
+  opensAt   DateTime  @map("opens_at")
+  closesAt  DateTime? @map("closes_at")
+  examId    String?   @unique @map("exam_id")
+  exam      Exam?     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  schemeId  String?   @unique @map("scheme_id")
+  scheme    Scheme?   @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([closesAt])
+  @@map("application_periods")
+}
+
+model Source {
+  id          String     @id @default(cuid())
+  url         String
+  type        SourceType
+  title       String?
+  retrievedAt DateTime   @default(now()) @map("retrieved_at")
+  examId      String?    @map("exam_id")
+  exam        Exam?      @relation(fields: [examId], references: [id], onDelete: Cascade)
+  schemeId    String?    @map("scheme_id")
+  scheme      Scheme?    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  @@index([examId])
+  @@index([schemeId])
+  @@map("sources")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  verifiedAt DateTime @default(now()) @map("verified_at")
+  verifiedBy String   @default("editorial_admin") @map("verified_by")
+  notes      String?
+  examId     String?  @map("exam_id")
+  exam       Exam?    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  schemeId   String?  @map("scheme_id")
+  scheme     Scheme?  @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([examId])
+  @@index([schemeId])
+  @@index([verifiedAt])
+  @@map("verifications")
+}
+
+model EligibilityCriteria {
+  id               String   @id @default(cuid())
+  minAge           Int?     @map("min_age")
+  maxAge           Int?     @map("max_age")
+  educationLevel   String?  @map("education_level")
+  incomeBand       String?  @map("income_band")
+  applicableStates String?  @map("applicable_states")
+  occupationTags   String?  @map("occupation_tags")
+  examId           String?  @unique @map("exam_id")
+  exam             Exam?    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  schemeId         String?  @unique @map("scheme_id")
+  scheme           Scheme?  @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("eligibility_criteria")
+}
+
+model ExamCategory {
+  examId     String   @map("exam_id")
+  exam       Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  categoryId String   @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([examId, categoryId])
+  @@map("exam_categories")
+}
+
+model SchemeCategory {
+  schemeId   String   @map("scheme_id")
+  scheme     Scheme   @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  categoryId String   @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([schemeId, categoryId])
+  @@map("scheme_categories")
+}
