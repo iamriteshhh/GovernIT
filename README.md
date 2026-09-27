@@ -1,4 +1,4 @@
-`# GovernIT — One-Stop Government Opportunity Finder
+# GovernIT — One-Stop Government Opportunity Finder
 
 GovernIT is a unified, verified destination for Indian citizens and job-seekers to discover government exams, recruitments, and public schemes in one place. Every listed opportunity links directly to official government portals and notifications with transparent verification timestamps.
 
