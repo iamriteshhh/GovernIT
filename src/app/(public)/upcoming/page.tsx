@@ -2,7 +2,7 @@ import { examService } from "@/server/services/exam-service";
 import { ExamCard } from "@/components/opportunity/ExamCard";
 import { Calendar, ShieldCheck } from "lucide-react";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Upcoming Exam Calendar | GovernIT",
@@ -10,7 +10,13 @@ export const metadata = {
 };
 
 export default async function UpcomingExamsPage() {
-  const upcomingExams = await examService.getUpcomingExams();
+  let upcomingExams: Awaited<ReturnType<typeof examService.getUpcomingExams>> = [];
+
+  try {
+    upcomingExams = await examService.getUpcomingExams();
+  } catch (error) {
+    console.warn("[UPCOMING EXAMS] Database temporarily unavailable:", error);
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthenticatedAdmin } from "@/server/auth/session";
+import { getAuthenticatedAdmin } from "@/server/auth/session";
 import { verificationActionSchema } from "@/validation/admin-schema";
 import { verificationService } from "@/server/services/verification-service";
 
 export async function POST(request: NextRequest) {
   try {
-    const isAuthed = await isAuthenticatedAdmin(request);
-    if (!isAuthed) {
+    const session = await getAuthenticatedAdmin(request);
+    if (!session.isAuthenticated) {
       return NextResponse.json({ error: "Unauthorized: Admin session required" }, { status: 401 });
     }
 
@@ -17,7 +17,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid verification payload", details: validated.error.flatten() }, { status: 400 });
     }
 
-    const record = await verificationService.recordVerification(validated.data);
+    // Record verifiedBy using the real authenticated identity
+    const adminIdentity = session.username || "admin";
+    const record = await verificationService.recordVerification({
+      ...validated.data,
+      verifiedBy: adminIdentity,
+    });
+
+    console.info(`[VERIFICATION AUDIT] Record verified by "${adminIdentity}": ${JSON.stringify(validated.data)}`);
     return NextResponse.json({ success: true, record });
   } catch (error) {
     console.error("Verification error:", error);

@@ -12,16 +12,17 @@ describe("Phase 8 - Admin Authentication and Authorization", () => {
     expect(token.includes(".")).toBe(true);
 
     const isValid = verifySessionToken(token);
-    expect(isValid).toBe(true);
+    expect(isValid).not.toBeNull();
+    expect(isValid?.role).toBe("admin");
   });
 
   it("should reject tampered or invalid session tokens", () => {
     const token = createSessionToken();
     const tampered = token + "bad_signature";
-    expect(verifySessionToken(tampered)).toBe(false);
-    expect(verifySessionToken("")).toBe(false);
-    expect(verifySessionToken(null)).toBe(false);
-    expect(verifySessionToken("invalid.token.parts")).toBe(false);
+    expect(verifySessionToken(tampered)).toBeNull();
+    expect(verifySessionToken("")).toBeNull();
+    expect(verifySessionToken(null)).toBeNull();
+    expect(verifySessionToken("invalid.token.parts")).toBeNull();
   });
 
   it("should reject login with invalid admin secret", async () => {
@@ -48,7 +49,7 @@ describe("Phase 8 - Admin Authentication and Authorization", () => {
     const cookies = res.cookies.get(authConfig.cookieName);
     expect(cookies).toBeDefined();
     expect(cookies?.value).toBeTruthy();
-    expect(verifySessionToken(cookies?.value)).toBe(true);
+    expect(verifySessionToken(cookies?.value)).toBeTruthy();
   });
 
   it("should reject unauthenticated verification attempts", async () => {

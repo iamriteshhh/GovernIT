@@ -5,7 +5,7 @@ import { ExamCard } from "@/components/opportunity/ExamCard";
 import { SchemeCard } from "@/components/opportunity/SchemeCard";
 import { Clock, AlertTriangle } from "lucide-react";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Applications Closing Soon | GovernIT Urgent Deadlines",
@@ -13,10 +13,19 @@ export const metadata = {
 };
 
 export default async function ClosingSoonPage() {
-  const [closingSoonExams, closingSoonSchemes] = await Promise.all([
-    examService.getClosingSoonExams(),
-    schemeService.getClosingSoonSchemes(),
-  ]);
+  let closingSoonExams: Awaited<ReturnType<typeof examService.getClosingSoonExams>> = [];
+  let closingSoonSchemes: Awaited<ReturnType<typeof schemeService.getClosingSoonSchemes>> = [];
+
+  try {
+    const [e, s] = await Promise.all([
+      examService.getClosingSoonExams(),
+      schemeService.getClosingSoonSchemes(),
+    ]);
+    closingSoonExams = e;
+    closingSoonSchemes = s;
+  } catch (error) {
+    console.warn("[CLOSING SOON] Database temporarily unavailable:", error);
+  }
 
   const totalUrgent = closingSoonExams.length + closingSoonSchemes.length;
 

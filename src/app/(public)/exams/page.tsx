@@ -4,7 +4,7 @@ import { organizationRepository } from "@/server/repositories/organization-repos
 import { ExamCard } from "@/components/opportunity/ExamCard";
 import { BookOpen, ShieldCheck, Search, Filter, X } from "lucide-react";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 interface ExamsListingPageProps {
   searchParams: Promise<{
@@ -16,7 +16,32 @@ interface ExamsListingPageProps {
   }>;
 }
 
+export async function generateMetadata({ searchParams }: ExamsListingPageProps) {
+  const params = await searchParams;
+  let title = "Government Exams & Recruitments 2026 | GovernIT";
+  if (params.search) {
+    title = `"${params.search}" — Government Exams | GovernIT`;
+  } else if (params.category) {
+    title = `${params.category.toUpperCase()} Government Exams | GovernIT`;
+  }
+
+  return {
+    title,
+    description:
+      "Browse officially verified UPSC, SSC, Banking, Railways, Defence, and State PSC government examinations with real-time IST deadlines.",
+    alternates: {
+      canonical: "/exams",
+    },
+    openGraph: {
+      title,
+      description: "Discover verified national and state government examinations with dynamic countdowns.",
+      url: "/exams",
+    },
+  };
+}
+
 export default async function ExamsListingPage({ searchParams }: ExamsListingPageProps) {
+
   const params = await searchParams;
   const search = params.search?.trim() || undefined;
   const categorySlug = params.category || undefined;
@@ -24,17 +49,28 @@ export default async function ExamsListingPage({ searchParams }: ExamsListingPag
   const onlyCentral = params.centralOnly === "true";
   const statusFilter = params.status || "all";
 
-  const [categories, states, { exams }] = await Promise.all([
-    organizationRepository.findCategories(),
-    organizationRepository.findStates(),
-    examService.listExams({
-      search,
-      categorySlug,
-      stateCode,
-      onlyCentral,
-      limit: 100,
-    }),
-  ]);
+  let categories: Awaited<ReturnType<typeof organizationRepository.findCategories>> = [];
+  let states: Awaited<ReturnType<typeof organizationRepository.findStates>> = [];
+  let exams: Awaited<ReturnType<typeof examService.listExams>>["exams"] = [];
+
+  try {
+    const [c, s, res] = await Promise.all([
+      organizationRepository.findCategories(),
+      organizationRepository.findStates(),
+      examService.listExams({
+        search,
+        categorySlug,
+        stateCode,
+        onlyCentral,
+        limit: 100,
+      }),
+    ]);
+    categories = c;
+    states = s;
+    exams = res.exams;
+  } catch (error) {
+    console.warn("[EXAMS LISTING] Database temporarily unavailable:", error);
+  }
 
   // Apply in-memory status filter if selected
   let filteredExams = exams;

@@ -19,10 +19,10 @@ export function SchemeCard({ scheme }: SchemeCardProps) {
 
   return (
     <div
-      className={`group relative flex flex-col justify-between rounded-2xl border bg-white p-6 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-lg dark:bg-slate-900 ${
+      className={`group relative flex flex-col justify-between rounded-2xl border bg-white p-6 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-900 ${
         isClosingSoon
           ? "border-amber-300 ring-1 ring-amber-400/30 hover:border-amber-400 dark:border-amber-800"
-          : "border-slate-200 hover:border-purple-300 dark:border-slate-800 dark:hover:border-purple-700"
+          : "border-slate-200 hover:border-slate-400 dark:border-slate-800 dark:hover:border-slate-600"
       }`}
     >
       <div>
@@ -36,7 +36,7 @@ export function SchemeCard({ scheme }: SchemeCardProps) {
                 {scheme.state.name}
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-[11px] font-medium text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                 Central Scheme
               </span>
             )}
@@ -48,7 +48,7 @@ export function SchemeCard({ scheme }: SchemeCardProps) {
         </div>
 
         {/* Title */}
-        <h3 className="mt-4 text-lg font-bold tracking-tight text-slate-900 transition-colors group-hover:text-purple-700 dark:text-white dark:group-hover:text-purple-400">
+        <h3 className="mt-4 text-base sm:text-lg font-bold tracking-tight text-slate-900 transition-colors group-hover:text-slate-700 dark:text-white dark:group-hover:text-slate-200">
           <Link href={`/schemes/${scheme.slug}`}>
             {scheme.name}
           </Link>
@@ -61,8 +61,8 @@ export function SchemeCard({ scheme }: SchemeCardProps) {
         </div>
 
         {/* Benefits Preview */}
-        <div className="mt-4 rounded-xl bg-purple-50/50 p-3 text-xs dark:bg-purple-950/30">
-          <span className="text-[10px] font-semibold text-purple-900 uppercase tracking-wider dark:text-purple-300">
+        <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-xs dark:border-slate-800 dark:bg-slate-950/40">
+          <span className="text-[10px] font-semibold text-slate-700 uppercase tracking-wider dark:text-slate-300">
             Benefits Summary
           </span>
           <p className="mt-1 line-clamp-2 text-slate-700 dark:text-slate-300 leading-relaxed">
@@ -96,7 +96,7 @@ export function SchemeCard({ scheme }: SchemeCardProps) {
         <div className="mt-3 flex items-center justify-between gap-2">
           <Link
             href={`/schemes/${scheme.slug}`}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 transition-colors hover:text-purple-700 dark:text-purple-400"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
           >
             Check Guidelines <ArrowRight className="h-3 w-3" />
           </Link>
@@ -105,7 +105,7 @@ export function SchemeCard({ scheme }: SchemeCardProps) {
             href={scheme.officialApplyUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition-all hover:bg-purple-500 active:scale-98"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition-all hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
           >
             Official Portal <ExternalLink className="h-3 w-3" />
           </a>

@@ -3,11 +3,13 @@ import { searchService } from "@/server/services/search-service";
 
 export async function GET(request: NextRequest) {
   try {
-    const q = request.nextUrl.searchParams.get("q") ?? "";
+    const rawQ = request.nextUrl.searchParams.get("q") ?? "";
+    const q = rawQ.slice(0, 150).trim();
     const category = request.nextUrl.searchParams.get("category") ?? undefined;
     const state = request.nextUrl.searchParams.get("state") ?? undefined;
     const centralOnly = request.nextUrl.searchParams.get("centralOnly") === "true";
-    const limit = Number(request.nextUrl.searchParams.get("limit") ?? 20);
+    const rawLimit = Number(request.nextUrl.searchParams.get("limit") ?? 20);
+    const limit = Math.min(100, Math.max(1, isNaN(rawLimit) ? 20 : rawLimit));
 
     const results = await searchService.searchAll(q, {
       categorySlug: category,

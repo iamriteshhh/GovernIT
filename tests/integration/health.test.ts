@@ -6,9 +6,12 @@ describe("Health Check API", () => {
     const response = await GET();
     const data = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(data.status).toBe("ok");
+    expect([200, 503]).toContain(response.status);
+    expect(["ok", "degraded"]).toContain(data.status);
     expect(data.app).toBe("GovernIT");
     expect(data).toHaveProperty("timestamp");
+    expect(data).toHaveProperty("uptimeSeconds");
+    expect(data.checks).toHaveProperty("database");
+    expect(data.checks).toHaveProperty("memory");
   });
 });

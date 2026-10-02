@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { schemeService } from "@/server/services/scheme-service";
+import { examService } from "@/server/services/exam-service";
 import { StatusBadge } from "@/components/opportunity/StatusBadge";
 import { DaysLeftBadge } from "@/components/opportunity/DaysLeftBadge";
 import { VerificationBadge } from "@/components/opportunity/VerificationBadge";
+import { SchemeCard } from "@/components/opportunity/SchemeCard";
+import { ExamCard } from "@/components/opportunity/ExamCard";
 import { formatDateIST } from "@/lib/dates";
 import { 
   ArrowLeft, 
@@ -16,10 +19,12 @@ import {
   CheckCircle2, 
   ShieldCheck, 
   HelpCircle,
-  Clock 
+  Clock,
+  BookOpen,
+  ArrowRight
 } from "lucide-react";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -27,18 +32,42 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const scheme = await schemeService.getSchemeBySlug(slug);
+  try {
+    const scheme = await schemeService.getSchemeBySlug(slug);
 
-  if (!scheme) {
+    if (!scheme) {
+      return {
+        title: "Scheme Not Found | GovernIT",
+      };
+    }
+
+    const title = `${scheme.name} — Benefits, Eligibility & Guidelines`;
+    const description = `Official details for ${scheme.name} administered by ${scheme.department.name}. Beneficiaries: ${scheme.whoCanBenefit}. Verified ministry guidelines and direct application links.`;
+
     return {
-      title: "Scheme Not Found | GovernIT",
+      title,
+      description,
+      alternates: {
+        canonical: `/schemes/${scheme.slug}`,
+      },
+      openGraph: {
+        title,
+        description,
+        url: `/schemes/${scheme.slug}`,
+        type: "article",
+        siteName: "GovernIT",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+      },
+    };
+  } catch {
+    return {
+      title: "Government Scheme | GovernIT",
     };
   }
-
-  return {
-    title: `${scheme.name} | GovernIT Guidelines & Benefits`,
-    description: `Eligibility criteria, benefits summary, required documents, and official application process for ${scheme.name}.`,
-  };
 }
 
 export default async function SchemeDetailPage({
@@ -47,17 +76,55 @@ export default async function SchemeDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const scheme = await schemeService.getSchemeBySlug(slug);
+  let scheme = null;
+  let suggestedSchemes: Awaited<ReturnType<typeof schemeService.listSchemes>>["schemes"] = [];
+  let suggestedExams: Awaited<ReturnType<typeof examService.listExams>>["exams"] = [];
+
+  try {
+    const [s, sRes, eRes] = await Promise.all([
+      schemeService.getSchemeBySlug(slug),
+      schemeService.listSchemes({ limit: 4 }),
+      examService.listExams({ limit: 3 }),
+    ]);
+    scheme = s;
+    suggestedSchemes = sRes.schemes.filter((item) => item.slug !== slug).slice(0, 2);
+    suggestedExams = eRes.exams;
+  } catch (error) {
+    console.warn("[SCHEME DETAIL] Database temporarily unavailable:", error);
+  }
 
   if (!scheme) {
     notFound();
   }
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "GovernmentService",
+    name: scheme.name,
+    serviceType: "Citizen Welfare & Public Benefit Scheme",
+    provider: {
+      "@type": "GovernmentOrganization",
+      name: scheme.department.name,
+    },
+    url: `${process.env.NEXT_PUBLIC_APP_URL || "https://governit.in"}/schemes/${scheme.slug}`,
+    description: scheme.benefits,
+    audience: {
+      "@type": "Audience",
+      audienceType: scheme.whoCanBenefit,
+    },
+    termsOfService: scheme.officialApplyUrl,
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Back button */}
       <Link
         href="/schemes"
+
         className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
@@ -227,6 +294,64 @@ export default async function SchemeDetailPage({
           </ul>
         </div>
       </div>
+
+      {/* Actively Suggested Citizen Schemes */}
+      {suggestedSchemes.length > 0 && (
+        <section className="mt-12">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
+            <div>
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
+                <Sparkles className="h-3 w-3" />
+                Active Civic Suggestions
+              </div>
+              <h2 className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+                Related Citizen Welfare Schemes &amp; Subsidies
+              </h2>
+            </div>
+            <Link
+              href="/schemes"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 hover:text-purple-700 dark:text-purple-400"
+            >
+              Browse all schemes <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
+            {suggestedSchemes.map((item) => (
+              <SchemeCard key={item.id} scheme={item} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Relevant Upcoming Government Recruitments */}
+      {suggestedExams.length > 0 && (
+        <section className="mt-12">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
+            <div>
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                <BookOpen className="h-3 w-3" />
+                Career &amp; Recruitment Opportunities
+              </div>
+              <h2 className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+                Verified Government Examinations
+              </h2>
+            </div>
+            <Link
+              href="/exams"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
+            >
+              Explore all exams <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-3">
+            {suggestedExams.map((item) => (
+              <ExamCard key={item.id} exam={item} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

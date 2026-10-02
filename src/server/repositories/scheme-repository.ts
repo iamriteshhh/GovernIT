@@ -147,4 +147,18 @@ export const schemeRepository = {
 
     return db.scheme.count({ where });
   },
+
+  async update(id: string, data: Prisma.SchemeUpdateInput) {
+    return db.scheme.update({
+      where: { id },
+      data,
+      include: {
+        department: true,
+        state: true,
+        sources: true,
+        verifications: true,
+      },
+    });
+  },
 };
+

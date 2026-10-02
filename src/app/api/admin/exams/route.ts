@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthenticatedAdmin } from "@/server/auth/session";
+import { getAuthenticatedAdmin } from "@/server/auth/session";
 import { examCreateSchema } from "@/validation/exam-schema";
 import { db } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   try {
-    const isAuthed = await isAuthenticatedAdmin(request);
-    if (!isAuthed) {
+    const session = await getAuthenticatedAdmin(request);
+    if (!session.isAuthenticated) {
       return NextResponse.json({ error: "Unauthorized: Admin session required" }, { status: 401 });
     }
 
@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = validated.data;
+    const adminIdentity = session.username || "admin";
 
     const exam = await db.exam.create({
       data: {
@@ -51,13 +52,14 @@ export async function POST(request: NextRequest) {
         verifications: {
           create: {
             verifiedAt: new Date(),
-            verifiedBy: "editorial_admin",
-            notes: "Created and verified via Admin Editorial Portal.",
+            verifiedBy: adminIdentity,
+            notes: `Created and verified via Admin Editorial Portal by ${adminIdentity}.`,
           },
         },
       },
     });
 
+    console.info(`[ADMIN AUDIT] Exam created by "${adminIdentity}": ${exam.slug}`);
     return NextResponse.json({ success: true, exam }, { status: 201 });
   } catch (error) {
     console.error("Create exam error:", error);

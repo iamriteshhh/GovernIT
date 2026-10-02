@@ -148,4 +148,19 @@ export const examRepository = {
 
     return db.exam.count({ where });
   },
+
+  async update(id: string, data: Prisma.ExamUpdateInput) {
+    return db.exam.update({
+      where: { id },
+      data,
+      include: {
+        conductingBody: true,
+        state: true,
+        applicationPeriod: true,
+        sources: true,
+        verifications: true,
+      },
+    });
+  },
 };
+

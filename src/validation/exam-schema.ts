@@ -42,3 +42,11 @@ export const examCreateSchema = z.object({
     })
   ).min(1, "At least one official source is required"),
 });
+
+export const examUpdateSchema = examCreateSchema
+  .partial()
+  .extend({
+    isPublished: z.boolean().optional(),
+    isArchived: z.boolean().optional(),
+  });
+

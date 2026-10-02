@@ -16,11 +16,12 @@ export function StatusBadge({ evaluation, size = "md" }: StatusBadgeProps) {
 
   switch (status) {
     case "APPLICATION_OPEN":
-      colorClasses = "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/80";
+      colorClasses = "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800";
       Icon = CheckCircle2;
       break;
     case "CLOSING_SOON":
-      colorClasses = "bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-800 animate-pulse";
+      // Calm semantic amber without distracting animations
+      colorClasses = "bg-amber-50 text-amber-900 border-amber-300 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-800";
       Icon = AlertTriangle;
       break;
     case "CLOSED":
@@ -29,11 +30,11 @@ export function StatusBadge({ evaluation, size = "md" }: StatusBadgeProps) {
       Icon = XCircle;
       break;
     case "EXAM_UPCOMING":
-      colorClasses = "bg-blue-50 text-blue-700 border-blue-200/80 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800/80";
+      colorClasses = "bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800";
       Icon = Calendar;
       break;
     case "RESULT_ANNOUNCED":
-      colorClasses = "bg-purple-50 text-purple-700 border-purple-200/80 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800/80";
+      colorClasses = "bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700";
       Icon = CheckCircle2;
       break;
     case "NOT_ANNOUNCED":

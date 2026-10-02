@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: governit-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: governit
+    ports:
+      - "5432:5432"
+    volumes:
+      - governit-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: governit-app
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgrespassword@postgres:5432/governit?schema=public"
+      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+      ADMIN_SECRET: "production-ready-admin-secret-at-least-32-chars-long"
+      AUTH_SECRET: "production-ready-auth-secret-at-least-32-chars-long"
+      ADMIN_USERS: "admin:admin-pass-2026,editorial:editorial-pass-2026"
+      NODE_ENV: "production"
+    ports:
+      - "3000:3000"
+
+volumes:
+  governit-pgdata:

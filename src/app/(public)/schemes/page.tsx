@@ -4,7 +4,7 @@ import { organizationRepository } from "@/server/repositories/organization-repos
 import { SchemeCard } from "@/components/opportunity/SchemeCard";
 import { Sparkles, ShieldCheck, Search, Filter, X } from "lucide-react";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 interface SchemesListingPageProps {
   searchParams: Promise<{
@@ -16,7 +16,32 @@ interface SchemesListingPageProps {
   }>;
 }
 
+export async function generateMetadata({ searchParams }: SchemesListingPageProps) {
+  const params = await searchParams;
+  let title = "Government Schemes & Citizen Welfare Programs 2026 | GovernIT";
+  if (params.search) {
+    title = `"${params.search}" — Government Schemes | GovernIT`;
+  } else if (params.category) {
+    title = `${params.category.toUpperCase()} Government Schemes | GovernIT`;
+  }
+
+  return {
+    title,
+    description:
+      "Discover verified Central and State government welfare schemes, student scholarships, youth skill programs, and business subsidies.",
+    alternates: {
+      canonical: "/schemes",
+    },
+    openGraph: {
+      title,
+      description: "Discover verified government welfare schemes with official guidelines and direct application links.",
+      url: "/schemes",
+    },
+  };
+}
+
 export default async function SchemesListingPage({ searchParams }: SchemesListingPageProps) {
+
   const params = await searchParams;
   const search = params.search?.trim() || undefined;
   const categorySlug = params.category || undefined;
@@ -24,17 +49,28 @@ export default async function SchemesListingPage({ searchParams }: SchemesListin
   const onlyCentral = params.centralOnly === "true";
   const statusFilter = params.status || "all";
 
-  const [categories, states, { schemes }] = await Promise.all([
-    organizationRepository.findCategories(),
-    organizationRepository.findStates(),
-    schemeService.listSchemes({
-      search,
-      categorySlug,
-      stateCode,
-      onlyCentral,
-      limit: 100,
-    }),
-  ]);
+  let categories: Awaited<ReturnType<typeof organizationRepository.findCategories>> = [];
+  let states: Awaited<ReturnType<typeof organizationRepository.findStates>> = [];
+  let schemes: Awaited<ReturnType<typeof schemeService.listSchemes>>["schemes"] = [];
+
+  try {
+    const [c, s, res] = await Promise.all([
+      organizationRepository.findCategories(),
+      organizationRepository.findStates(),
+      schemeService.listSchemes({
+        search,
+        categorySlug,
+        stateCode,
+        onlyCentral,
+        limit: 100,
+      }),
+    ]);
+    categories = c;
+    states = s;
+    schemes = res.schemes;
+  } catch (error) {
+    console.warn("[SCHEMES LISTING] Database temporarily unavailable:", error);
+  }
 
   // Apply in-memory status filter if selected
   let filteredSchemes = schemes;
