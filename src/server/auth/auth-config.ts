@@ -1,5 +1,5 @@
-import crypto from "crypto";
 import { env } from "@/lib/env";
+import { edgeSha256Hex, edgeTimingSafeEqual } from "./edge-crypto";
 
 export const AUTH_COOKIE_NAME = "governit_admin_session";
 
@@ -21,14 +21,14 @@ function parseAdminCredentials(): AdminCredential[] {
       if (username && secret) {
         creds.push({
           username,
-          secretHash: crypto.createHash("sha256").update(secret).digest("hex"),
+          secretHash: edgeSha256Hex(secret),
         });
       }
     }
   }
 
   // Also include the primary admin user if not already defined
-  const primaryHash = crypto.createHash("sha256").update(env.ADMIN_SECRET).digest("hex");
+  const primaryHash = edgeSha256Hex(env.ADMIN_SECRET);
   if (!creds.some((c) => c.username === "admin")) {
     creds.push({
       username: "admin",
@@ -52,24 +52,21 @@ export const authConfig = {
  */
 export function verifyAdminCredentials(usernameInput: string, secretKeyInput: string): { valid: boolean; username: string } {
   const normalizedUsername = (usernameInput || "admin").trim().toLowerCase();
-  const inputHash = crypto.createHash("sha256").update(secretKeyInput).digest("hex");
-  const inputHashBuf = Buffer.from(inputHash, "utf-8");
+  const inputHash = edgeSha256Hex(secretKeyInput);
 
   const adminUsers = authConfig.adminUsers;
 
   for (const cred of adminUsers) {
     if (cred.username === normalizedUsername) {
-      const expectedHashBuf = Buffer.from(cred.secretHash, "utf-8");
-      if (inputHashBuf.length === expectedHashBuf.length && crypto.timingSafeEqual(inputHashBuf, expectedHashBuf)) {
+      if (edgeTimingSafeEqual(inputHash, cred.secretHash)) {
         return { valid: true, username: cred.username };
       }
     }
   }
 
   // If username wasn't specified or was "admin", check against adminSecret directly
-  const defaultAdminHash = crypto.createHash("sha256").update(authConfig.adminSecret).digest("hex");
-  const defaultHashBuf = Buffer.from(defaultAdminHash, "utf-8");
-  if (normalizedUsername === "admin" && inputHashBuf.length === defaultHashBuf.length && crypto.timingSafeEqual(inputHashBuf, defaultHashBuf)) {
+  const defaultAdminHash = edgeSha256Hex(authConfig.adminSecret);
+  if (normalizedUsername === "admin" && edgeTimingSafeEqual(inputHash, defaultAdminHash)) {
     return { valid: true, username: "admin" };
   }
 

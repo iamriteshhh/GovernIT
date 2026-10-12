@@ -1,7 +1,12 @@
-import crypto from "crypto";
 import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
 import { authConfig, AUTH_COOKIE_NAME } from "./auth-config";
+import {
+  edgeBase64UrlDecode,
+  edgeBase64UrlEncode,
+  edgeHmacSha256Base64Url,
+  edgeTimingSafeEqual,
+} from "./edge-crypto";
 
 export interface SessionPayload {
   role: "admin";
@@ -19,11 +24,11 @@ export function createSessionToken(username = "admin"): string {
     createdAt: Date.now(),
   };
 
-  const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const signature = crypto
-    .createHmac("sha256", authConfig.authSecret || authConfig.adminSecret)
-    .update(payloadBase64)
-    .digest("base64url");
+  const payloadBase64 = edgeBase64UrlEncode(JSON.stringify(payload));
+  const signature = edgeHmacSha256Base64Url(
+    authConfig.authSecret || authConfig.adminSecret,
+    payloadBase64
+  );
 
   return `${payloadBase64}.${signature}`;
 }
@@ -38,24 +43,17 @@ export function verifySessionToken(token: string | null | undefined): SessionPay
   if (parts.length !== 2) return null;
 
   const [payloadBase64, providedSig] = parts;
-  const expectedSig = crypto
-    .createHmac("sha256", authConfig.authSecret || authConfig.adminSecret)
-    .update(payloadBase64)
-    .digest("base64url");
+  const expectedSig = edgeHmacSha256Base64Url(
+    authConfig.authSecret || authConfig.adminSecret,
+    payloadBase64
+  );
 
-  const bufProvided = Buffer.from(providedSig);
-  const bufExpected = Buffer.from(expectedSig);
-
-  if (bufProvided.length !== bufExpected.length) {
-    return null;
-  }
-
-  if (!crypto.timingSafeEqual(bufProvided, bufExpected)) {
+  if (!edgeTimingSafeEqual(providedSig, expectedSig)) {
     return null;
   }
 
   try {
-    const payload: SessionPayload = JSON.parse(Buffer.from(payloadBase64, "base64url").toString());
+    const payload: SessionPayload = JSON.parse(edgeBase64UrlDecode(payloadBase64));
     const age = Date.now() - payload.createdAt;
     if (age < authConfig.maxAgeSeconds * 1000) {
       return payload;
