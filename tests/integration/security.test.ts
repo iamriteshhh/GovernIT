@@ -58,13 +58,13 @@ describe("Group 1: Security Foundations", () => {
 
   describe("Per-Admin Identity & Timing-Safe Verification", () => {
     it("should authenticate allowed primary admin", () => {
-      const result = verifyAdminCredentials("admin", "dev-only-admin-pass-2026");
+      const result = verifyAdminCredentials("admin", "test-only-admin-pass");
       expect(result.valid).toBe(true);
       expect(result.username).toBe("admin");
     });
 
     it("should authenticate secondary editorial admin independently", () => {
-      const result = verifyAdminCredentials("editorial", "dev-only-editorial-pass-2026");
+      const result = verifyAdminCredentials("editorial", "test-only-editorial-pass");
       expect(result.valid).toBe(true);
       expect(result.username).toBe("editorial");
     });
@@ -104,5 +104,12 @@ describe("Group 1: Security Foundations", () => {
       expect(verifySessionToken("invalid-format")).toBeNull();
       expect(verifySessionToken(null)).toBeNull();
     });
+  });
+});
+
+describe("No hidden login paths", () => {
+  it("ADMIN_SECRET is not accepted as a password", async () => {
+    const { verifyAdminCredentials, authConfig } = await import("@/server/auth/auth-config");
+    expect(verifyAdminCredentials("admin", authConfig.adminSecret).valid).toBe(false);
   });
 });

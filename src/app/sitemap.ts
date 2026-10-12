@@ -2,6 +2,9 @@ import { MetadataRoute } from "next";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 
+// Built per request: at build time there is no database, which would ship an empty sitemap.
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 

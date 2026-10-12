@@ -1,55 +1,53 @@
 import { StatusEvaluation } from "@/domain/status";
-import { CheckCircle2, AlertTriangle, XCircle, Info, Calendar } from "lucide-react";
+import { AlertTriangle, Ban, Calendar, CheckCircle2, Clock, HelpCircle, XCircle } from "lucide-react";
 
 interface StatusBadgeProps {
-  evaluation: StatusEvaluation;
+  evaluation: Pick<StatusEvaluation, "status" | "statusLabel">;
   size?: "sm" | "md";
 }
 
-export function StatusBadge({ evaluation, size = "md" }: StatusBadgeProps) {
-  const { status, statusLabel } = evaluation;
+const STYLES = {
+  open: { cls: "bg-success-bg text-success border-success-line", Icon: CheckCircle2 },
+  urgent: { cls: "bg-urgent-bg text-urgent border-urgent-line", Icon: AlertTriangle },
+  upcoming: { cls: "bg-info-bg text-info border-info-line", Icon: Clock },
+  exam: { cls: "bg-info-bg text-info border-info-line", Icon: Calendar },
+  closed: { cls: "bg-surface-muted text-muted border-line", Icon: XCircle },
+  void: { cls: "bg-danger-bg text-danger border-danger-line", Icon: Ban },
+  unknown: { cls: "bg-surface-muted text-fg border-line", Icon: HelpCircle },
+} as const;
 
-  const sizeClasses = size === "sm" ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs";
-
-  let colorClasses = "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700";
-  let Icon = Info;
-
+function styleFor(status: StatusEvaluation["status"]) {
   switch (status) {
     case "APPLICATION_OPEN":
-      colorClasses = "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800";
-      Icon = CheckCircle2;
-      break;
+    case "RESULT_ANNOUNCED":
+      return STYLES.open;
     case "CLOSING_SOON":
-      // Calm semantic amber without distracting animations
-      colorClasses = "bg-amber-50 text-amber-900 border-amber-300 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-800";
-      Icon = AlertTriangle;
-      break;
+      return STYLES.urgent;
+    case "UPCOMING":
+      return STYLES.upcoming;
+    case "EXAM_UPCOMING":
+      return STYLES.exam;
     case "CLOSED":
     case "EXAM_COMPLETED":
-      colorClasses = "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700";
-      Icon = XCircle;
-      break;
-    case "EXAM_UPCOMING":
-      colorClasses = "bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800";
-      Icon = Calendar;
-      break;
-    case "RESULT_ANNOUNCED":
-      colorClasses = "bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700";
-      Icon = CheckCircle2;
-      break;
-    case "NOT_ANNOUNCED":
+      return STYLES.closed;
+    case "CANCELLED":
+    case "WITHDRAWN":
+    case "SUPERSEDED":
+      return STYLES.void;
     default:
-      colorClasses = "bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800";
-      Icon = Info;
-      break;
+      return STYLES.unknown;
   }
+}
+
+/** Status is always icon + text, never colour alone. */
+export function StatusBadge({ evaluation, size = "md" }: StatusBadgeProps) {
+  const { cls, Icon } = styleFor(evaluation.status);
+  const sizeClasses = size === "sm" ? "px-2.5 py-0.5 text-sm" : "px-3 py-1 text-sm";
 
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border font-semibold tracking-wide ${sizeClasses} ${colorClasses}`}
-    >
-      <Icon className={size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5"} />
-      <span>{statusLabel}</span>
+    <span className={`inline-flex items-center gap-1.5 rounded-full border font-semibold ${sizeClasses} ${cls}`}>
+      <Icon className="h-4 w-4 shrink-0" aria-hidden />
+      <span>{evaluation.statusLabel}</span>
     </span>
   );
 }

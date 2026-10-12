@@ -12,6 +12,21 @@ enum OrgType {
   STATE
 }
 
+/// Lifecycle facts that dates alone cannot express. Set only from official evidence.
+enum LifecycleState {
+  ACTIVE
+  CANCELLED
+  WITHDRAWN
+  SUPERSEDED
+}
+
+/// What the stored officialApplyUrl actually points at. Drives the button label.
+enum ApplyLinkKind {
+  DIRECT_APPLICATION // the registration/application form itself
+  APPLICATION_PORTAL // official portal where the application is reached after login/navigation
+  DEPARTMENT_SITE // department/scheme homepage only, not an application destination
+}
+
 enum SourceType {
   OFFICIAL_NOTIFICATION
   OFFICIAL_GUIDELINE
@@ -20,16 +35,16 @@ enum SourceType {
 }
 
 model Organization {
-  id               String         @id @default(cuid())
-  name             String         @unique
-  type             OrgType        @default(CENTRAL)
-  parentOrgId      String?        @map("parent_org_id")
-  parentOrg        Organization?  @relation("OrgHierarchy", fields: [parentOrgId], references: [id])
-  childOrgs        Organization[] @relation("OrgHierarchy")
-  exams            Exam[]
-  schemes          Scheme[]
-  createdAt        DateTime       @default(now()) @map("created_at")
-  updatedAt        DateTime       @updatedAt @map("updated_at")
+  id          String         @id @default(cuid())
+  name        String         @unique
+  type        OrgType        @default(CENTRAL)
+  parentOrgId String?        @map("parent_org_id")
+  parentOrg   Organization?  @relation("OrgHierarchy", fields: [parentOrgId], references: [id])
+  childOrgs   Organization[] @relation("OrgHierarchy")
+  exams       Exam[]
+  schemes     Scheme[]
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
 
   @@map("organizations")
 }
@@ -59,32 +74,40 @@ model Category {
 }
 
 model Exam {
-  id                    String                @id @default(cuid())
-  name                  String
-  slug                  String                @unique
-  conductingBodyId      String                @map("conducting_body_id")
-  conductingBody        Organization          @relation(fields: [conductingBodyId], references: [id])
-  department            String?
-  educationEligibility  String                @map("education_eligibility")
-  ageEligibility        String                @map("age_eligibility")
-  stateId               String?               @map("state_id")
-  state                 State?                @relation(fields: [stateId], references: [id])
-  examDate              DateTime?             @map("exam_date")
-  admitCardDate         DateTime?             @map("admit_card_date")
-  resultDate            DateTime?             @map("result_date")
-  resultStatus          String?               @map("result_status")
-  applicationFee        String?               @map("application_fee")
-  vacancyCount          Int?                  @map("vacancy_count")
-  officialApplyUrl      String                @map("official_apply_url")
-  isPublished           Boolean               @default(true) @map("is_published")
-  isArchived            Boolean               @default(false) @map("is_archived")
-  applicationPeriod     ApplicationPeriod?
-  sources               Source[]
-  verifications         Verification[]
-  eligibilityCriteria   EligibilityCriteria?
-  categories            ExamCategory[]
-  createdAt             DateTime              @default(now()) @map("created_at")
-  updatedAt             DateTime              @updatedAt @map("updated_at")
+  id                   String               @id @default(cuid())
+  name                 String
+  slug                 String               @unique
+  conductingBodyId     String               @map("conducting_body_id")
+  conductingBody       Organization         @relation(fields: [conductingBodyId], references: [id])
+  department           String?
+  educationEligibility String               @map("education_eligibility")
+  ageEligibility       String               @map("age_eligibility")
+  stateId              String?              @map("state_id")
+  state                State?               @relation(fields: [stateId], references: [id])
+  examDate             DateTime?            @map("exam_date")
+  admitCardDate        DateTime?            @map("admit_card_date")
+  resultDate           DateTime?            @map("result_date")
+  resultStatus         String?              @map("result_status")
+  applicationFee       String?              @map("application_fee")
+  vacancyCount         Int?                 @map("vacancy_count")
+  officialApplyUrl     String               @map("official_apply_url")
+  applyLinkKind        ApplyLinkKind        @default(APPLICATION_PORTAL) @map("apply_link_kind")
+  lifecycle            LifecycleState       @default(ACTIVE)
+  lifecycleNote        String?              @map("lifecycle_note")
+  /// Stable id of this exam at its monitored source, e.g. "tnpsc:11/2026".
+  externalRef          String?              @unique @map("external_ref")
+  monitoredSourceId    String?              @map("monitored_source_id")
+  monitoredSource      MonitoredSource?     @relation(fields: [monitoredSourceId], references: [id], onDelete: SetNull)
+  changeCandidates     ChangeCandidate[]
+  isPublished          Boolean              @default(true) @map("is_published")
+  isArchived           Boolean              @default(false) @map("is_archived")
+  applicationPeriod    ApplicationPeriod?
+  sources              Source[]
+  verifications        Verification[]
+  eligibilityCriteria  EligibilityCriteria?
+  categories           ExamCategory[]
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @updatedAt @map("updated_at")
 
   @@index([slug])
   @@index([stateId])
@@ -92,40 +115,51 @@ model Exam {
 }
 
 model Scheme {
-  id                   String                @id @default(cuid())
-  name                 String
-  slug                 String                @unique
-  departmentId         String                @map("department_id")
-  department           Organization          @relation(fields: [departmentId], references: [id])
-  whoCanBenefit        String                @map("who_can_benefit")
-  eligibility          String
-  benefits             String
-  requiredDocuments    String                @map("required_documents")
-  applicationProcess   String                @map("application_process")
-  deadline             DateTime?             @map("deadline")
-  stateId              String?               @map("state_id")
-  state                State?                @relation(fields: [stateId], references: [id])
-  officialApplyUrl     String                @map("official_apply_url")
-  isPublished          Boolean               @default(true) @map("is_published")
-  isArchived           Boolean               @default(false) @map("is_archived")
-  applicationPeriod    ApplicationPeriod?
-  sources              Source[]
-  verifications        Verification[]
-  eligibilityCriteria  EligibilityCriteria?
-  categories           SchemeCategory[]
-  createdAt            DateTime              @default(now()) @map("created_at")
-  updatedAt            DateTime              @updatedAt @map("updated_at")
+  id                  String               @id @default(cuid())
+  name                String
+  slug                String               @unique
+  departmentId        String               @map("department_id")
+  department          Organization         @relation(fields: [departmentId], references: [id])
+  whoCanBenefit       String               @map("who_can_benefit")
+  eligibility         String
+  benefits            String
+  requiredDocuments   String               @map("required_documents")
+  applicationProcess  String               @map("application_process")
+  /// End of the scheme/programme itself. NOT the application deadline (that lives in ApplicationPeriod).
+  programEndsAt       DateTime?            @map("program_ends_at")
+  stateId             String?              @map("state_id")
+  state               State?               @relation(fields: [stateId], references: [id])
+  officialApplyUrl    String               @map("official_apply_url")
+  applyLinkKind       ApplyLinkKind        @default(DEPARTMENT_SITE) @map("apply_link_kind")
+  lifecycle           LifecycleState       @default(ACTIVE)
+  lifecycleNote       String?              @map("lifecycle_note")
+  monitoredSourceId   String?              @map("monitored_source_id")
+  monitoredSource     MonitoredSource?     @relation(fields: [monitoredSourceId], references: [id], onDelete: SetNull)
+  changeCandidates    ChangeCandidate[]
+  isPublished         Boolean              @default(true) @map("is_published")
+  isArchived          Boolean              @default(false) @map("is_archived")
+  applicationPeriod   ApplicationPeriod?
+  sources             Source[]
+  verifications       Verification[]
+  eligibilityCriteria EligibilityCriteria?
+  categories          SchemeCategory[]
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
 
   @@index([slug])
   @@index([stateId])
-  @@index([deadline])
   @@map("schemes")
 }
 
+/// Canonical application window for BOTH exams and schemes (single source of truth).
 model ApplicationPeriod {
   id        String    @id @default(cuid())
-  opensAt   DateTime  @map("opens_at")
+  /// Null = opening date not published.
+  opensAt   DateTime? @map("opens_at")
+  /// Exact instant applications stop being accepted. Null = no published deadline.
   closesAt  DateTime? @map("closes_at")
+  /// Officially continuous enrolment with no fixed deadline (rolling scheme).
+  isRolling Boolean   @default(false) @map("is_rolling")
   examId    String?   @unique @map("exam_id")
   exam      Exam?     @relation(fields: [examId], references: [id], onDelete: Cascade)
   schemeId  String?   @unique @map("scheme_id")
@@ -208,4 +242,210 @@ model SchemeCategory {
 
   @@id([schemeId, categoryId])
   @@map("scheme_categories")
+}
+
+// ---------------------------------------------------------------------------
+// Live-source monitoring
+// ---------------------------------------------------------------------------
+
+enum CheckOutcome {
+  NOT_MODIFIED // 304 / identical content
+  UNCHANGED // parsed fine, nothing material changed
+  CHANGED // parsed fine, changes recorded (applied or queued)
+  FETCH_FAILED
+  PARSE_FAILED
+  BLOCKED // host refused us or is not allowed: needs manual verification
+}
+
+enum CandidateKind {
+  NEW_OPPORTUNITY
+  DATE_CHANGE
+  LINK_CHANGE
+  STATUS_CHANGE
+  NOTICE_UPDATED
+  LINK_BROKEN
+  PARSER_FAILURE
+}
+
+enum CandidateState {
+  PENDING
+  APPROVED
+  REJECTED
+  AUTO_APPLIED
+}
+
+enum JobTrigger {
+  SCHEDULED
+  MANUAL
+}
+
+/// Registry of official sources GovernIT polls. One adapter per source.
+model MonitoredSource {
+  id                   String            @id @default(cuid())
+  key                  String            @unique
+  name                 String
+  organization         String
+  /// e.g. HTML_TABLE, SITEMAP, RSS, JSON_API
+  kind                 String
+  url                  String
+  /// Only this host may be fetched for this source.
+  allowedHost          String            @map("allowed_host")
+  adapterId            String            @map("adapter_id")
+  adapterVersion       String            @map("adapter_version")
+  /// "exam" | "scheme" | "notice"
+  opportunityType      String            @map("opportunity_type")
+  checkIntervalMinutes Int               @default(360) @map("check_interval_minutes")
+  /// Records verified through this source become "Stale" after this many hours without a successful check.
+  staleAfterHours      Int               @default(72) @map("stale_after_hours")
+  enabled              Boolean           @default(true)
+  /// Opportunity sources only: publish new, fully-parsed records without waiting for review.
+  autoPublish          Boolean           @default(false) @map("auto_publish")
+  lastAttemptAt        DateTime?         @map("last_attempt_at")
+  lastSuccessAt        DateTime?         @map("last_success_at")
+  lastContentChangeAt  DateTime?         @map("last_content_change_at")
+  nextCheckAt          DateTime?         @map("next_check_at")
+  lastOutcome          CheckOutcome?     @map("last_outcome")
+  lastError            String?           @map("last_error")
+  consecutiveFailures  Int               @default(0) @map("consecutive_failures")
+  etag                 String?
+  lastModified         String?           @map("last_modified")
+  contentHash          String?           @map("content_hash")
+  /// Last known good parse result (externalId -> fingerprint). Kept on failures.
+  snapshot             Json?
+  /// Overlap lock: a run owns the source until this instant.
+  lockedUntil          DateTime?         @map("locked_until")
+  checks               SourceCheck[]
+  candidates           ChangeCandidate[]
+  notices              OfficialNotice[]
+  exams                Exam[]
+  schemes              Scheme[]
+  createdAt            DateTime          @default(now()) @map("created_at")
+  updatedAt            DateTime          @updatedAt @map("updated_at")
+
+  @@map("monitored_sources")
+}
+
+/// One attempt to check one source. Diagnostics only: never cookies or secrets.
+model SourceCheck {
+  id            String            @id @default(cuid())
+  sourceId      String            @map("source_id")
+  source        MonitoredSource   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  jobRunId      String?           @map("job_run_id")
+  jobRun        JobRun?           @relation(fields: [jobRunId], references: [id], onDelete: SetNull)
+  startedAt     DateTime          @default(now()) @map("started_at")
+  finishedAt    DateTime?         @map("finished_at")
+  outcome       CheckOutcome?
+  httpStatus    Int?              @map("http_status")
+  finalUrl      String?           @map("final_url")
+  etag          String?
+  lastModified  String?           @map("last_modified")
+  parserVersion String?           @map("parser_version")
+  itemsFound    Int?              @map("items_found")
+  changeSummary String?           @map("change_summary")
+  error         String?
+  candidates    ChangeCandidate[]
+
+  @@index([sourceId, startedAt])
+  @@map("source_checks")
+}
+
+/// Review queue: candidate changes found by adapters or link checks.
+model ChangeCandidate {
+  id          String           @id @default(cuid())
+  sourceId    String?          @map("source_id")
+  source      MonitoredSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  checkId     String?          @map("check_id")
+  check       SourceCheck?     @relation(fields: [checkId], references: [id], onDelete: SetNull)
+  kind        CandidateKind
+  state       CandidateState   @default(PENDING)
+  externalId  String?          @map("external_id")
+  title       String
+  /// Official page the evidence came from.
+  evidenceUrl String?          @map("evidence_url")
+  /// Normalised candidate values (dates as ISO strings, urls, notes).
+  proposed    Json
+  /// Values on the record at detection time, for side-by-side review.
+  current     Json?
+  reason      String
+  /// Dedupe key: the same proposed change is queued once.
+  fingerprint String           @unique
+  examId      String?          @map("exam_id")
+  exam        Exam?            @relation(fields: [examId], references: [id], onDelete: SetNull)
+  schemeId    String?          @map("scheme_id")
+  scheme      Scheme?          @relation(fields: [schemeId], references: [id], onDelete: SetNull)
+  reviewedBy  String?          @map("reviewed_by")
+  reviewedAt  DateTime?        @map("reviewed_at")
+  reviewNote  String?          @map("review_note")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  @@index([state, createdAt])
+  @@map("change_candidates")
+}
+
+model JobRun {
+  id               String        @id @default(cuid())
+  trigger          JobTrigger
+  startedAt        DateTime      @default(now()) @map("started_at")
+  finishedAt       DateTime?     @map("finished_at")
+  sourcesAttempted Int           @default(0) @map("sources_attempted")
+  sourcesSucceeded Int           @default(0) @map("sources_succeeded")
+  sourcesFailed    Int           @default(0) @map("sources_failed")
+  reviewsQueued    Int           @default(0) @map("reviews_queued")
+  linksChecked     Int           @default(0) @map("links_checked")
+  note             String?
+  checks           SourceCheck[]
+
+  @@index([startedAt])
+  @@map("job_runs")
+}
+
+/// Conservative reachability record for an official URL. Never decides lifecycle status.
+model LinkCheck {
+  id                  String    @id @default(cuid())
+  url                 String    @unique
+  lastCheckedAt       DateTime? @map("last_checked_at")
+  /// OK | REDIRECTED | BLOCKED | NOT_FOUND | SERVER_ERROR | NETWORK_ERROR | NOT_ALLOWED
+  lastResult          String?   @map("last_result")
+  httpStatus          Int?      @map("http_status")
+  finalUrl            String?   @map("final_url")
+  consecutiveFailures Int       @default(0) @map("consecutive_failures")
+  lastOkAt            DateTime? @map("last_ok_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@map("link_checks")
+}
+
+/// Append-only trail of material data changes (admin and automated).
+model AuditLog {
+  id         String   @id @default(cuid())
+  actor      String
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  changes    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+/// Official notice titles + links copied from signal sources (public "Latest official notices" feed).
+model OfficialNotice {
+  id          String          @id @default(cuid())
+  sourceId    String          @map("source_id")
+  source      MonitoredSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  externalId  String          @map("external_id")
+  title       String
+  url         String
+  /// Date stated by the source next to the notice, if any.
+  publishedOn DateTime?       @map("published_on")
+  firstSeenAt DateTime        @default(now()) @map("first_seen_at")
+  lastSeenAt  DateTime        @default(now()) @map("last_seen_at")
+
+  @@unique([sourceId, externalId])
+  @@index([firstSeenAt])
+  @@index([publishedOn])
+  @@map("official_notices")
 }

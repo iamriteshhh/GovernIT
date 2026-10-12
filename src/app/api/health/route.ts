@@ -1,50 +1,58 @@
 import { NextResponse } from "next/server";
-import { env } from "@/lib/env";
 import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+/** Hours after which a missing scheduled run is reported as degraded ingestion. */
+const INGESTION_STALE_HOURS = 12;
+
+/**
+ * Public health: app, database and ingestion state only. No versions, memory, env or error text.
+ * Returns 503 only when the database (and therefore the site's data) is unavailable.
+ */
 export async function GET() {
-  const startTime = Date.now();
-  let dbStatus = "connected";
-  let dbLatencyMs: number | null = null;
-  let isHealthy = true;
+  const started = Date.now();
+  let database: { status: "connected" | "disconnected"; latencyMs: number | null } = { status: "disconnected", latencyMs: null };
+  let ingestion: Record<string, unknown> = { status: "unknown" };
 
   try {
-    const dbPingStart = Date.now();
-    await db.$queryRawUnsafe("SELECT 1");
-    dbLatencyMs = Date.now() - dbPingStart;
+    const t = Date.now();
+    await db.$queryRaw`SELECT 1`;
+    database = { status: "connected", latencyMs: Date.now() - t };
   } catch (error) {
-    dbStatus = "disconnected";
-    isHealthy = false;
-    console.error("[HEALTH CHECK] Database ping failed:", error);
+    console.error("[HEALTH] database ping failed:", error instanceof Error ? error.message.split("\n").pop() : error);
   }
 
-  const memory = process.memoryUsage();
+  if (database.status === "connected") {
+    try {
+      const [lastRun, failingSources, enabledSources, pendingReviews] = await Promise.all([
+        db.jobRun.findFirst({ where: { trigger: "SCHEDULED" }, orderBy: { startedAt: "desc" }, select: { startedAt: true, finishedAt: true } }),
+        db.monitoredSource.count({ where: { enabled: true, consecutiveFailures: { gt: 0 } } }),
+        db.monitoredSource.count({ where: { enabled: true } }),
+        db.changeCandidate.count({ where: { state: "PENDING" } }),
+      ]);
+      const ageHours = lastRun ? (Date.now() - lastRun.startedAt.getTime()) / 3_600_000 : null;
+      ingestion = {
+        status: !lastRun || (ageHours ?? 0) > INGESTION_STALE_HOURS ? "stale" : failingSources > 0 ? "degraded" : "ok",
+        lastScheduledRunAt: lastRun?.startedAt.toISOString() ?? null,
+        enabledSources,
+        failingSources,
+        pendingReviews,
+      };
+    } catch {
+      ingestion = { status: "unknown" };
+    }
+  }
 
-  const healthData = {
-    status: isHealthy ? "ok" : "degraded",
-    app: "GovernIT",
-    timestamp: new Date().toISOString(),
-    environment: env.NODE_ENV,
-    uptimeSeconds: Math.floor(process.uptime()),
-    responseTimeMs: Date.now() - startTime,
-    checks: {
-      database: {
-        status: dbStatus,
-        latencyMs: dbLatencyMs,
-      },
-      memory: {
-        heapUsedMB: Math.round((memory.heapUsed / 1024 / 1024) * 100) / 100,
-        rssMB: Math.round((memory.rss / 1024 / 1024) * 100) / 100,
-      },
+  const healthy = database.status === "connected";
+  return NextResponse.json(
+    {
+      status: healthy ? "ok" : "degraded",
+      app: "GovernIT",
+      timestamp: new Date().toISOString(),
+      responseTimeMs: Date.now() - started,
+      checks: { database, ingestion },
     },
-  };
-
-  return NextResponse.json(healthData, {
-    status: isHealthy ? 200 : 503,
-    headers: {
-      "Cache-Control": "no-store, no-cache, must-revalidate",
-    },
-  });
+    { status: healthy ? 200 : 503, headers: { "Cache-Control": "no-store" } }
+  );
 }

@@ -39,12 +39,17 @@ function parseAdminCredentials(): AdminCredential[] {
   return creds;
 }
 
+let adminUsersCache: AdminCredential[] | null = null;
+
 export const authConfig = {
   adminSecret: env.ADMIN_SECRET,
   authSecret: env.AUTH_SECRET,
   cookieName: AUTH_COOKIE_NAME,
   maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
-  adminUsers: parseAdminCredentials(),
+  /** Parsed on first use, so `next build` (which has no secrets) can import this module. */
+  get adminUsers(): AdminCredential[] {
+    return (adminUsersCache ??= parseAdminCredentials());
+  },
 };
 
 /**

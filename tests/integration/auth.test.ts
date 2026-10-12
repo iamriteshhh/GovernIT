@@ -39,7 +39,7 @@ describe("Phase 8 - Admin Authentication and Authorization", () => {
   it("should succeed login with correct admin secret and set cookie", async () => {
     const req = new NextRequest("http://localhost:3000/api/admin/login", {
       method: "POST",
-      body: JSON.stringify({ secretKey: authConfig.adminSecret }),
+      body: JSON.stringify({ username: "admin", secretKey: "test-only-admin-pass" }),
       headers: { "Content-Type": "application/json" },
     });
 

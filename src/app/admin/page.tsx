@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { AdminConsole } from "@/components/admin/AdminConsole";
 
 export const metadata = {
-  title: "Admin Editorial Console | GovernIT",
+  title: "Admin Editorial Console",
   robots: {
     index: false,
     follow: false,
@@ -59,6 +59,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     totalSchemes,
     totalOrgs,
     totalVerifications,
+    pendingReviews,
     rawExams,
     rawSchemes,
     organizations,
@@ -70,6 +71,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     db.scheme.count({ where: { isPublished: true, isArchived: false } }),
     db.organization.count(),
     db.verification.count(),
+    db.changeCandidate.count({ where: { state: "PENDING" } }),
     db.exam.findMany({
       where: examWhere,
       skip,
@@ -123,6 +125,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     applicationFee: e.applicationFee,
     vacancyCount: e.vacancyCount,
     officialApplyUrl: e.officialApplyUrl,
+    applyLinkKind: e.applyLinkKind,
+    lifecycle: e.lifecycle,
+    lifecycleNote: e.lifecycleNote,
     opensAt: e.applicationPeriod?.opensAt?.toISOString() ?? null,
     closesAt: e.applicationPeriod?.closesAt?.toISOString() ?? null,
     lastVerifiedAt: e.verifications[0]?.verifiedAt.toISOString() ?? null,
@@ -145,7 +150,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     stateId: s.stateId,
     stateName: s.state?.name ?? null,
     officialApplyUrl: s.officialApplyUrl,
-    deadline: s.applicationPeriod?.closesAt?.toISOString() ?? null,
+    applyLinkKind: s.applyLinkKind,
+    lifecycle: s.lifecycle,
+    lifecycleNote: s.lifecycleNote,
+    opensAt: s.applicationPeriod?.opensAt?.toISOString() ?? null,
+    closesAt: s.applicationPeriod?.closesAt?.toISOString() ?? null,
+    isRolling: s.applicationPeriod?.isRolling ?? false,
+    programEndsAt: s.programEndsAt?.toISOString() ?? null,
     lastVerifiedAt: s.verifications[0]?.verifiedAt.toISOString() ?? null,
     lastVerifiedBy: s.verifications[0]?.verifiedBy ?? null,
     isPublished: s.isPublished,
@@ -161,6 +172,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           totalSchemes,
           totalOrgs,
           totalVerifications,
+          pendingReviews,
         }}
         exams={exams}
         schemes={schemes}

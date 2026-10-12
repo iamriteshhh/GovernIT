@@ -1,8 +1,8 @@
-import { AlertCircle, Scale, CheckCircle2, ShieldCheck } from "lucide-react";
+import { AlertCircle, Scale } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = {
-  title: "Terms and Conditions | GovernIT",
+  title: "Terms and Conditions",
   description:
     "Terms of service, independent civic platform disclaimer, and acceptable use guidelines for GovernIT.",
 };
@@ -13,23 +13,23 @@ export default function TermsPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="border-b border-slate-200 pb-8 dark:border-slate-800">
-        <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-200">
+      <div className="border-b border-line pb-8">
+        <div className="inline-flex items-center gap-2 rounded-full bg-surface-muted px-3 py-1 text-xs font-semibold text-fg">
           <Scale className="h-4 w-4" />
           Civic Information Service Agreement
         </div>
-        <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+        <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
           Terms &amp; Conditions
         </h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-sm text-muted">
           Last updated: {lastUpdated} &bull; Please read carefully before using GovernIT
         </p>
       </div>
 
       {/* Prominent Independent Platform Notice */}
-      <div className="mt-6 rounded-2xl border border-amber-300 bg-amber-50/70 p-5 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+      <div className="mt-6 rounded-2xl border border-urgent-line bg-urgent-bg p-5 text-urgent">
         <div className="flex items-start gap-3">
-          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-400" />
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-urgent" />
           <div className="text-xs leading-relaxed space-y-1.5">
             <p className="font-bold text-sm">Mandatory Independent Platform Notice</p>
             <p>
@@ -43,20 +43,20 @@ export default function TermsPage() {
       </div>
 
       {/* Sections */}
-      <div className="mt-8 space-y-10 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+      <div className="mt-8 space-y-10 text-sm leading-relaxed text-muted">
         {/* 1. Acceptance of Terms */}
         <section className="space-y-3">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+          <h2 className="text-lg font-bold text-fg">
             1. Acceptance of Terms
           </h2>
           <p>
-            By accessing or using GovernIT (the &ldquo;Service&rdquo;), you acknowledge that you have read, understood, and agreed to be bound by these Terms and Conditions and our <Link href="/privacy" className="text-emerald-600 underline dark:text-emerald-400">Privacy Policy</Link>. If you do not agree to these terms, you should discontinue use of the platform.
+            By accessing or using GovernIT (the &ldquo;Service&rdquo;), you acknowledge that you have read, understood, and agreed to be bound by these Terms and Conditions and our <Link href="/privacy" className="text-success underline">Privacy Policy</Link>. If you do not agree to these terms, you should discontinue use of the platform.
           </p>
         </section>
 
         {/* 2. Nature of the Service */}
         <section className="space-y-3">
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">
+          <h2 className="text-base font-bold text-fg">
             2. Purpose &amp; Nature of the Platform
           </h2>
           <p>
@@ -66,18 +66,18 @@ export default function TermsPage() {
 
         {/* 3. Verification & Zero-Fabrication Standard */}
         <section className="space-y-3">
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">
+          <h2 className="text-base font-bold text-fg">
             3. Verification &amp; Accuracy Disclaimer
           </h2>
           <p>
-            We adhere to a strict editorial policy requiring every opportunity to reference an official gazette, recruitment notification, or ministry website with an audit timestamp. However:
+            Every listing links to an official source and shows when it was last verified; listings that have not been verified recently are labelled. However:
           </p>
           <ul className="list-disc space-y-2 pl-5">
             <li>
               Government bodies frequently issue corrigenda, date extensions, rescheduling notices, and syllabus revisions without prior warning.
             </li>
             <li>
-              While GovernIT updates timelines promptly, <strong>the official gazette notification issued by the respective conducting body remains the sole legally authoritative document</strong>.
+              Listings can be out of date, and <strong>the official gazette notification issued by the respective conducting body remains the sole legally authoritative document</strong>.
             </li>
             <li>
               Aspirants and citizens are strictly advised to double-check deadlines, age criteria, and qualifications on the official conducting body&apos;s website before submitting fees or taking critical actions.
@@ -87,7 +87,7 @@ export default function TermsPage() {
 
         {/* 4. Acceptable Use */}
         <section className="space-y-3">
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">
+          <h2 className="text-base font-bold text-fg">
             4. Acceptable Use Policy
           </h2>
           <p>
@@ -103,7 +103,7 @@ export default function TermsPage() {
 
         {/* 5. Limitation of Liability */}
         <section className="space-y-3">
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">
+          <h2 className="text-base font-bold text-fg">
             5. Limitation of Liability
           </h2>
           <p>
@@ -117,24 +117,24 @@ export default function TermsPage() {
         </section>
 
         {/* 6. Governing Law */}
-        <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-6 dark:border-slate-800 dark:bg-slate-900/50">
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">
+        <section className="rounded-2xl border border-line bg-surface-muted p-6">
+          <h2 className="text-base font-bold text-fg">
             6. Governing Law &amp; Jurisdiction
           </h2>
           <p className="mt-2">
             These Terms shall be governed by and construed in accordance with the laws of the Republic of India. Any disputes arising in connection with the Service shall be subject to the exclusive jurisdiction of the competent courts in India.
           </p>
-          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-            For questions or editorial notices regarding these terms, email: <a href="mailto:editorial@governit.in" className="text-emerald-600 underline dark:text-emerald-400">editorial@governit.in</a>
+          <p className="mt-3 text-xs text-muted">
+            For questions or editorial notices regarding these terms, email: <a href="mailto:editorial@governit.in" className="text-success underline">editorial@governit.in</a>
           </p>
         </section>
       </div>
 
       {/* Back to Home Link */}
-      <div className="mt-12 border-t border-slate-200 pt-6 dark:border-slate-800">
+      <div className="mt-12 border-t border-line pt-6">
         <Link
           href="/"
-          className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+          className="text-xs font-semibold text-success hover:text-success"
         >
           &larr; Return to GovernIT Home
         </Link>

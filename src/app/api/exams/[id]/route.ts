@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { examService } from "@/server/services/exam-service";
+import { apiFailure } from "@/server/services/load";
 
 export async function GET(
   _request: NextRequest,
@@ -15,7 +16,6 @@ export async function GET(
 
     return NextResponse.json({ data: exam });
   } catch (error) {
-    console.error("API /api/exams/[id] error:", error);
-    return NextResponse.json({ error: "Failed to retrieve exam details" }, { status: 500 });
+    return apiFailure("API_EXAM_DETAIL", error);
   }
 }

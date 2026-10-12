@@ -1,38 +1,38 @@
+# All credentials come from .env (see .env.example). Nothing secret is stored here.
 services:
   postgres:
     image: postgres:16-alpine
     container_name: governit-postgres
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespassword
-      POSTGRES_DB: governit
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
     volumes:
       - governit-pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   app:
+    profiles: ["app"]
     build:
       context: .
       dockerfile: Dockerfile
     container_name: governit-app
-    restart: always
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
+    env_file: .env
     environment:
-      DATABASE_URL: "postgresql://postgres:postgrespassword@postgres:5432/governit?schema=public"
-      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
-      ADMIN_SECRET: "production-ready-admin-secret-at-least-32-chars-long"
-      AUTH_SECRET: "production-ready-auth-secret-at-least-32-chars-long"
-      ADMIN_USERS: "admin:admin-pass-2026,editorial:editorial-pass-2026"
-      NODE_ENV: "production"
+      # Inside the compose network Postgres listens on 5432 under the service name.
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      NODE_ENV: production
     ports:
       - "3000:3000"
 

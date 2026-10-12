@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { examQuerySchema } from "@/validation/exam-schema";
 import { examService } from "@/server/services/exam-service";
+import { isApplicationActionable, isApplicationInactive } from "@/domain/status";
+import { apiFailure } from "@/server/services/load";
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,13 +32,11 @@ export async function GET(request: NextRequest) {
       if (status === "closing-soon") {
         exams = exams.filter((e) => e.applicationStatus.status === "CLOSING_SOON");
       } else if (status === "open") {
-        exams = exams.filter(
-          (e) => e.applicationStatus.status === "APPLICATION_OPEN" || e.applicationStatus.status === "CLOSING_SOON"
-        );
+        exams = exams.filter((e) => isApplicationActionable(e.applicationStatus.status));
       } else if (status === "upcoming") {
         exams = exams.filter((e) => e.examScheduleStatus.status === "EXAM_UPCOMING");
       } else if (status === "closed") {
-        exams = exams.filter((e) => e.applicationStatus.status === "CLOSED");
+        exams = exams.filter((e) => isApplicationInactive(e.applicationStatus.status));
       }
       total = exams.length;
     }
@@ -50,7 +50,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("API /api/exams error:", error);
-    return NextResponse.json({ error: "Failed to retrieve exams" }, { status: 500 });
+    return apiFailure("API_EXAMS", error);
   }
 }

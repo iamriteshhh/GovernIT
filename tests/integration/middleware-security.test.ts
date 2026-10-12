@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { NextRequest } from "next/server";
-import { middleware } from "@/middleware";
+import { proxy as middleware } from "@/proxy";
 import { createSessionToken } from "@/server/auth/session";
 import { AUTH_COOKIE_NAME } from "@/server/auth/auth-config";
 

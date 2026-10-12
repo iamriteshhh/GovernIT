@@ -5,6 +5,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CookieConsentBanner } from "@/components/layout/CookieConsentBanner";
 import { env } from "@/lib/env";
+import { themeInitScript } from "@/lib/theme";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
     template: "%s | GovernIT",
   },
   description:
-    "Discover officially verified government exams, recruitments, and citizen schemes with real-time Indian Standard Time deadlines, gazette notifications, and direct application links.",
+    "Find Indian government exams, recruitments and schemes: application deadlines in IST, verification status, and links to the official portals.",
   keywords: [
     "Government Exams",
     "UPSC",
@@ -51,7 +52,7 @@ export const metadata: Metadata = {
     siteName: "GovernIT",
     title: "GovernIT | One-Stop Government Opportunity Finder",
     description:
-      "100% officially verified national and state government exams, recruitments, and citizen welfare schemes with dynamic IST countdowns.",
+      "Indian government exams, recruitments and welfare schemes with IST deadlines, verification status and official links.",
     images: [
       {
         url: "/og-image.png",
@@ -65,7 +66,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "GovernIT | One-Stop Government Opportunity Finder",
     description:
-      "Discover verified government exams and citizen schemes with live IST countdowns and official gazette citations.",
+      "Government exams and schemes with IST deadlines, verification status and official links.",
     images: ["/og-image.png"],
   },
   robots: {
@@ -90,17 +91,22 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // data-theme is set by the inline script before hydration; React must not "fix" it.
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className="min-h-full flex flex-col bg-background text-fg antialiased">
         {/* Skip to Main Content Link for WCAG Accessibility */}
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-xl focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-xs focus:font-semibold focus:text-white focus:shadow-xl dark:focus:bg-white dark:focus:text-slate-900"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:rounded-xl focus:bg-primary focus:px-4 focus:py-3 focus:text-base focus:font-semibold focus:text-primary-fg"
         >
           Skip to main content
         </a>
         <Header />
-        <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-hidden">
+        <main id="main-content" tabIndex={-1} className="flex-1">
           {children}
         </main>
         <Footer />

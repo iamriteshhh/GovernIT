@@ -1,40 +1,123 @@
 @import "tailwindcss";
 
+/* `dark:` utilities follow the explicit data-theme attribute set before hydration. */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* ---------- Design tokens: light (default) ---------- */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  color-scheme: light;
+  --background: #f6f8fb;
   --surface: #ffffff;
-  --surface-border: #e2e8f0;
-  --primary: #0f172a;
-  --primary-hover: #1e293b;
-  --primary-foreground: #ffffff;
-  --muted: #64748b;
-  --muted-surface: #f1f5f9;
+  --surface-muted: #eef3f9;
+  --line: #d3dce8;
+  --fg: #0f1d33;
+  --muted: #475569;
+  --primary: #1d4ed8;
+  --primary-hover: #1e40af;
+  --primary-fg: #ffffff;
+  --link: #1d4ed8;
+  --focus: #1d4ed8;
+  --info-bg: #eaf2ff;
+  --info-line: #b9d0f5;
+  --info: #1e3a8a;
+  --urgent-bg: #fff4e8;
+  --urgent-line: #f2b37a;
+  --urgent: #8a3a0c;
+  --success-bg: #ecf8f0;
+  --success-line: #a7d9b8;
+  --success: #14532d;
+  --danger-bg: #fdeeee;
+  --danger-line: #f1b4b4;
+  --danger: #8f1d1d;
+  --shadow: 0 1px 2px rgb(15 29 51 / 0.06), 0 1px 3px rgb(15 29 51 / 0.04);
+}
+
+/* ---------- Dark: restrained, mostly monochrome slate ---------- */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0f141b;
+  --surface: #161d27;
+  --surface-muted: #1e2733;
+  --line: #354357;
+  --fg: #eef2f7;
+  --muted: #b3bfcf;
+  --primary: #2f62c9;
+  --primary-hover: #3a70dc;
+  --primary-fg: #ffffff;
+  --link: #9cc0ff;
+  --focus: #8ab4ff;
+  --info-bg: #182233;
+  --info-line: #31476a;
+  --info: #c9d9f6;
+  --urgent-bg: #2a1e13;
+  --urgent-line: #7a4a22;
+  --urgent: #f7c69a;
+  --success-bg: #14241b;
+  --success-line: #2f5c40;
+  --success: #a8e2bd;
+  --danger-bg: #2b1719;
+  --danger-line: #6e2a2f;
+  --danger: #f6b4b4;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-link: var(--link);
+  --color-info-bg: var(--info-bg);
+  --color-info-line: var(--info-line);
+  --color-info: var(--info);
+  --color-urgent-bg: var(--urgent-bg);
+  --color-urgent-line: var(--urgent-line);
+  --color-urgent: var(--urgent);
+  --color-success-bg: var(--success-bg);
+  --color-success-line: var(--success-line);
+  --color-success: var(--success);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-line: var(--danger-line);
+  --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #020617;
-    --foreground: #f8fafc;
-    --surface: #0f172a;
-    --surface-border: #1e293b;
-    --primary: #f8fafc;
-    --primary-hover: #e2e8f0;
-    --primary-foreground: #0f172a;
-    --muted: #94a3b8;
-    --muted-surface: #1e293b;
-  }
+/* Slightly larger base size: every rem-based size scales with it. */
+html {
+  font-size: 106.25%;
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
+  color: var(--fg);
+  line-height: 1.6;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Always-visible keyboard focus, in both themes. */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.shadow-card {
+  box-shadow: var(--shadow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

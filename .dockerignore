@@ -1,0 +1,10 @@
+# Never send secrets or local state into the image build context.
+.env*
+!.env.example
+.git
+node_modules
+.next
+.browser-check
+coverage
+tests
+*.log

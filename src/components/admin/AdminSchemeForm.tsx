@@ -1,7 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { X, Save, AlertCircle } from "lucide-react";
+import { Save } from "lucide-react";
+import {
+  CheckField,
+  describeApiError,
+  joinIst,
+  LIFECYCLE_OPTIONS,
+  LINK_KIND_OPTIONS,
+  Modal,
+  SelectField,
+  splitIst,
+  TextArea,
+  TextField,
+} from "./FormKit";
 
 interface AdminSchemeFormProps {
   initialData?: {
@@ -14,9 +26,15 @@ interface AdminSchemeFormProps {
     benefits?: string;
     requiredDocuments?: string;
     applicationProcess?: string;
-    deadline?: string | null;
+    opensAt?: string | null;
+    closesAt?: string | null;
+    isRolling?: boolean;
+    programEndsAt?: string | null;
     stateId?: string | null;
     officialApplyUrl?: string;
+    applyLinkKind?: string;
+    lifecycle?: string;
+    lifecycleNote?: string | null;
     isPublished?: boolean;
     isArchived?: boolean;
   };
@@ -27,19 +45,13 @@ interface AdminSchemeFormProps {
   onSuccess: () => void;
 }
 
-export function AdminSchemeForm({
-  initialData,
-  organizations,
-  states,
-  isOpen,
-  onClose,
-  onSuccess,
-}: AdminSchemeFormProps) {
+export function AdminSchemeForm({ initialData, organizations, states, isOpen, onClose, onSuccess }: AdminSchemeFormProps) {
   const isEditing = Boolean(initialData?.id);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const closes = splitIst(initialData?.closesAt);
 
-  const [formData, setFormData] = useState({
+  const [f, setF] = useState({
     name: initialData?.name ?? "",
     slug: initialData?.slug ?? "",
     departmentId: initialData?.departmentId ?? (organizations[0]?.id || ""),
@@ -48,12 +60,23 @@ export function AdminSchemeForm({
     benefits: initialData?.benefits ?? "",
     requiredDocuments: initialData?.requiredDocuments ?? "",
     applicationProcess: initialData?.applicationProcess ?? "",
-    deadline: initialData?.deadline ? initialData.deadline.substring(0, 10) : "",
+    opensDate: splitIst(initialData?.opensAt).date,
+    closesDate: closes.date,
+    closesTime: closes.time || "23:59",
+    isRolling: initialData?.isRolling ?? false,
+    programEndsDate: splitIst(initialData?.programEndsAt).date,
     stateId: initialData?.stateId ?? "",
     officialApplyUrl: initialData?.officialApplyUrl ?? "",
+    applyLinkKind: initialData?.applyLinkKind ?? "DEPARTMENT_SITE",
+    lifecycle: initialData?.lifecycle ?? "ACTIVE",
+    lifecycleNote: initialData?.lifecycleNote ?? "",
     officialGuidelineUrl: "",
-    isPublished: initialData?.isPublished ?? true,
+    isPublished: initialData?.isPublished ?? false,
+    isArchived: initialData?.isArchived ?? false,
+    verifyNow: false,
+    verificationNote: "",
   });
+  const set = <K extends keyof typeof f>(k: K) => (v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
 
   if (!isOpen) return null;
 
@@ -64,48 +87,43 @@ export function AdminSchemeForm({
 
     try {
       const payload: Record<string, unknown> = {
-        name: formData.name.trim(),
-        slug: formData.slug.trim(),
-        departmentId: formData.departmentId,
-        whoCanBenefit: formData.whoCanBenefit.trim(),
-        eligibility: formData.eligibility.trim(),
-        benefits: formData.benefits.trim(),
-        requiredDocuments: formData.requiredDocuments.trim(),
-        applicationProcess: formData.applicationProcess.trim(),
-        stateId: formData.stateId || null,
-        officialApplyUrl: formData.officialApplyUrl.trim(),
-        deadline: formData.deadline ? new Date(formData.deadline).toISOString() : null,
-        isPublished: formData.isPublished,
+        name: f.name.trim(),
+        slug: f.slug.trim(),
+        departmentId: f.departmentId,
+        whoCanBenefit: f.whoCanBenefit.trim(),
+        eligibility: f.eligibility.trim(),
+        benefits: f.benefits.trim(),
+        requiredDocuments: f.requiredDocuments.trim(),
+        applicationProcess: f.applicationProcess.trim(),
+        opensAt: f.opensDate || null,
+        closesAt: f.isRolling ? null : joinIst(f.closesDate, f.closesTime),
+        isRolling: f.isRolling,
+        programEndsAt: f.programEndsDate || null,
+        stateId: f.stateId || null,
+        officialApplyUrl: f.officialApplyUrl.trim(),
+        applyLinkKind: f.applyLinkKind,
+        lifecycle: f.lifecycle,
+        lifecycleNote: f.lifecycleNote.trim() || null,
+        isPublished: f.isPublished,
+        isArchived: f.isArchived,
+        verificationNote: f.verifyNow ? f.verificationNote.trim() : undefined,
       };
 
       if (!isEditing) {
-        if (!formData.officialGuidelineUrl) {
-          setError("At least one official ministry guideline URL is required.");
-          setLoading(false);
-          return;
-        }
+        delete payload.isPublished;
+        delete payload.isArchived;
         payload.sources = [
-          {
-            url: formData.officialGuidelineUrl.trim(),
-            type: "OFFICIAL_GUIDELINE",
-            title: `${formData.name} Official Ministry Guidelines`,
-          },
+          { url: f.officialGuidelineUrl.trim(), type: "OFFICIAL_GUIDELINE", title: `${f.name} official guidelines` },
         ];
       }
 
-      const url = isEditing ? `/api/admin/schemes/${initialData!.id}` : "/api/admin/schemes";
-      const method = isEditing ? "PATCH" : "POST";
-
-      const res = await fetch(url, {
-        method,
+      const res = await fetch(isEditing ? `/api/admin/schemes/${initialData!.id}` : "/api/admin/schemes", {
+        method: isEditing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json.error || "Failed to save scheme record");
-      }
+      if (!res.ok) throw new Error(describeApiError(json));
 
       onSuccess();
       onClose();
@@ -117,233 +135,113 @@ export function AdminSchemeForm({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
-          <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              {isEditing ? "Edit Citizen Scheme" : "Create New Verified Public Scheme"}
-            </h3>
-            <p className="text-xs text-slate-500">
-              {isEditing ? "Update scheme benefits, eligibility and deadlines" : "Add official ministry backed public scheme"}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
-          >
-            <X className="h-5 w-5" />
-          </button>
+    <Modal
+      title={isEditing ? "Edit scheme" : "Add scheme"}
+      subtitle="All dates are Indian Standard Time. Enter only what the official guidelines state."
+      error={error}
+      onClose={onClose}
+    >
+      <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <TextField label="Scheme name" required value={f.name} onChange={set("name")} />
+          <TextField label="Slug (URL identifier)" required value={f.slug} onChange={set("slug")} hint="Lowercase letters, numbers and hyphens" />
+          <SelectField
+            label="Ministry / department"
+            required
+            value={f.departmentId}
+            onChange={set("departmentId")}
+            options={organizations.map((o) => ({ value: o.id, label: o.name }))}
+          />
+          <SelectField
+            label="Location"
+            value={f.stateId}
+            onChange={set("stateId")}
+            options={[{ value: "", label: "Central (all India)" }, ...states.map((s) => ({ value: s.id, label: s.name }))]}
+          />
         </div>
 
-        {error && (
-          <div className="mt-4 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{error}</span>
+        <TextArea label="Who can benefit" required value={f.whoCanBenefit} onChange={set("whoCanBenefit")} />
+        <TextArea label="Eligibility" required value={f.eligibility} onChange={set("eligibility")} />
+        <TextArea label="Benefits" required value={f.benefits} onChange={set("benefits")} />
+        <TextArea label="Documents needed" required value={f.requiredDocuments} onChange={set("requiredDocuments")} />
+        <TextArea label="How to apply" required value={f.applicationProcess} onChange={set("applicationProcess")} rows={4} />
+
+        <fieldset className="grid grid-cols-1 gap-4 rounded-2xl border border-line p-4 sm:grid-cols-3">
+          <legend className="px-1 text-base font-bold text-fg">Application window (IST)</legend>
+          <div className="sm:col-span-3">
+            <CheckField label="Continuous enrolment: officially no fixed last date" checked={f.isRolling} onChange={set("isRolling")} />
+          </div>
+          <TextField label="Applications open" type="date" value={f.opensDate} onChange={set("opensDate")} hint="Leave empty if not published" />
+          {!f.isRolling && (
+            <>
+              <TextField label="Last date" type="date" value={f.closesDate} onChange={set("closesDate")} />
+              <TextField label="Last time" type="time" value={f.closesTime} onChange={set("closesTime")} hint="Default 11:59 pm" />
+            </>
+          )}
+        </fieldset>
+
+        <TextField
+          label="Programme end date (not the application deadline)"
+          type="date"
+          value={f.programEndsDate}
+          onChange={set("programEndsDate")}
+          hint="Only if the scheme itself officially ends"
+        />
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <TextField label="Official URL" type="url" required value={f.officialApplyUrl} onChange={set("officialApplyUrl")} />
+          <SelectField
+            label="What does this URL open?"
+            value={f.applyLinkKind}
+            onChange={set("applyLinkKind")}
+            options={LINK_KIND_OPTIONS}
+            hint="Controls the button label. Never mark a homepage as a direct form."
+          />
+        </div>
+        {!isEditing && (
+          <TextField
+            label="Official guidelines URL"
+            type="url"
+            required
+            value={f.officialGuidelineUrl}
+            onChange={set("officialGuidelineUrl")}
+            hint="The guideline document the details come from (https)"
+          />
+        )}
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <SelectField label="Lifecycle" value={f.lifecycle} onChange={set("lifecycle")} options={LIFECYCLE_OPTIONS} />
+          <TextField label="Lifecycle note" value={f.lifecycleNote} onChange={set("lifecycleNote")} />
+        </div>
+
+        <div className="rounded-2xl border border-line p-4">
+          <CheckField label="I checked these details against the official source just now" checked={f.verifyNow} onChange={set("verifyNow")} />
+          {f.verifyNow && (
+            <TextField label="What did you check?" required value={f.verificationNote} onChange={set("verificationNote")} hint="Recorded with your name in the verification history" />
+          )}
+        </div>
+
+        {isEditing && (
+          <div className="flex flex-wrap gap-6">
+            <CheckField label="Published on the public site" checked={f.isPublished} onChange={set("isPublished")} />
+            <CheckField label="Archived (kept for reference)" checked={f.isArchived} onChange={set("isArchived")} />
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-xs">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block font-medium text-slate-700 dark:text-slate-300">Scheme Name *</label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => {
-                  setFormData({
-                    ...formData,
-                    name: e.target.value,
-                    slug: isEditing ? formData.slug : e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
-                  });
-                }}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950"
-                placeholder="e.g. PM Kisan Samman Nidhi"
-              />
-            </div>
-
-            <div>
-              <label className="block font-medium text-slate-700 dark:text-slate-300">Slug (URL identifier) *</label>
-              <input
-                type="text"
-                required
-                value={formData.slug}
-                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950"
-                placeholder="e.g. pm-kisan"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block font-medium text-slate-700 dark:text-slate-300">Administering Ministry / Dept *</label>
-              <select
-                value={formData.departmentId}
-                onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950"
-              >
-                {organizations.map((org) => (
-                  <option key={org.id} value={org.id}>
-                    {org.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block font-medium text-slate-700 dark:text-slate-300">State / Central Classification</label>
-              <select
-                value={formData.stateId}
-                onChange={(e) => setFormData({ ...formData, stateId: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950"
-              >
-                <option value="">Central Scheme</option>
-                {states.map((st) => (
-                  <option key={st.id} value={st.id}>
-                    {st.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block font-medium text-slate-700 dark:text-slate-300">Target Beneficiary Summary *</label>
-            <input
-              type="text"
-              required
-              value={formData.whoCanBenefit}
-              onChange={(e) => setFormData({ ...formData, whoCanBenefit: e.target.value })}
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950"
-              placeholder="e.g. Small and marginal farmer families with cultivable landholding"
-            />
-          </div>
-
-          <div>
-            <label className="block font-medium text-slate-700 dark:text-slate-300">Detailed Eligibility Criteria *</label>
-            <textarea
-              rows={2}
-              required
-              value={formData.eligibility}
-              onChange={(e) => setFormData({ ...formData, eligibility: e.target.value })}
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950"
-              placeholder="Eligibility conditions..."
-            />
-          </div>
-
-          <div>
-            <label className="block font-medium text-slate-700 dark:text-slate-300">Benefits Provided *</label>
-            <textarea
-              rows={2}
-              required
-              value={formData.benefits}
-              onChange={(e) => setFormData({ ...formData, benefits: e.target.value })}
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950"
-              placeholder="Financial assistance of ₹6,000 per year..."
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block font-medium text-slate-700 dark:text-slate-300">Required Documents *</label>
-              <input
-                type="text"
-                required
-                value={formData.requiredDocuments}
-                onChange={(e) => setFormData({ ...formData, requiredDocuments: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950"
-                placeholder="Aadhaar, Land records, Bank account details"
-              />
-            </div>
-
-            <div>
-              <label className="block font-medium text-slate-700 dark:text-slate-300">Application Process *</label>
-              <input
-                type="text"
-                required
-                value={formData.applicationProcess}
-                onChange={(e) => setFormData({ ...formData, applicationProcess: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950"
-                placeholder="Online via portal or Common Service Centres (CSCs)"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block font-medium text-slate-700 dark:text-slate-300">Official Portal / Apply URL *</label>
-              <input
-                type="url"
-                required
-                value={formData.officialApplyUrl}
-                onChange={(e) => setFormData({ ...formData, officialApplyUrl: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950"
-                placeholder="https://pmkisan.gov.in"
-              />
-            </div>
-
-            <div>
-              <label className="block font-medium text-slate-700 dark:text-slate-300">Application Deadline (if applicable)</label>
-              <input
-                type="date"
-                value={formData.deadline}
-                onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950"
-              />
-            </div>
-          </div>
-
-          {!isEditing && (
-            <div>
-              <label className="block font-medium text-slate-700 dark:text-slate-300">
-                Official Guidelines URL * (Anti-Fabrication Rule)
-              </label>
-              <input
-                type="url"
-                required
-                value={formData.officialGuidelineUrl}
-                onChange={(e) => setFormData({ ...formData, officialGuidelineUrl: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950"
-                placeholder="https://pmkisan.gov.in/guidelines.pdf"
-              />
-            </div>
-          )}
-
-          <div className="flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-800">
-            <label className="inline-flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.isPublished}
-                onChange={(e) => setFormData({ ...formData, isPublished: e.target.checked })}
-                className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
-              />
-              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Publish immediately on public site
-              </span>
-            </label>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
-              >
-                <Save className="h-3.5 w-3.5" />
-                {loading ? "Saving..." : isEditing ? "Save Changes" : "Create Scheme"}
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line pt-4">
+          <button type="button" onClick={onClose} className="min-h-11 rounded-xl border border-line px-5 text-base font-semibold text-fg hover:bg-surface-muted">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 text-base font-semibold text-primary-fg hover:bg-primary-hover disabled:opacity-50"
+          >
+            <Save className="h-4 w-4" aria-hidden />
+            {loading ? "Saving…" : isEditing ? "Save changes" : "Create as draft"}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }

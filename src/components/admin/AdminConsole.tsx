@@ -38,6 +38,9 @@ interface AdminExamItem {
   applicationFee: string | null;
   vacancyCount: number | null;
   officialApplyUrl: string;
+  applyLinkKind: string;
+  lifecycle: string;
+  lifecycleNote: string | null;
   opensAt: string | null;
   closesAt: string | null;
   lastVerifiedAt: string | null;
@@ -60,7 +63,13 @@ interface AdminSchemeItem {
   stateId: string | null;
   stateName: string | null;
   officialApplyUrl: string;
-  deadline: string | null;
+  applyLinkKind: string;
+  lifecycle: string;
+  lifecycleNote: string | null;
+  opensAt: string | null;
+  closesAt: string | null;
+  isRolling: boolean;
+  programEndsAt: string | null;
   lastVerifiedAt: string | null;
   lastVerifiedBy: string | null;
   isPublished: boolean;
@@ -74,6 +83,7 @@ interface AdminConsoleProps {
     totalSchemes: number;
     totalOrgs: number;
     totalVerifications: number;
+    pendingReviews: number;
   };
   exams: AdminExamItem[];
   schemes: AdminSchemeItem[];
@@ -113,13 +123,19 @@ export function AdminConsole({
   const [editingScheme, setEditingScheme] = useState<AdminSchemeItem | undefined>(undefined);
 
   const handleVerify = async (type: "exam" | "scheme", id: string, name: string) => {
+    // Verification must describe real evidence; a bare click is not a check.
+    const notes = window.prompt(
+      `What did you confirm for "${name}" on the official source? (e.g. "Last date 05.11.2026 matches notification 11/2026")`
+    );
+    if (!notes || notes.trim().length < 5) {
+      setMessage("Verification not recorded: describe what you checked (at least 5 characters).");
+      return;
+    }
     setVerifyingId(id);
     setMessage(null);
 
     try {
-      const payload = type === "exam"
-        ? { examId: id, notes: `Re-verified ${name} via admin console` }
-        : { schemeId: id, notes: `Re-verified ${name} via admin console` };
+      const payload = type === "exam" ? { examId: id, notes: notes.trim() } : { schemeId: id, notes: notes.trim() };
 
       const res = await fetch("/api/admin/verify", {
         method: "POST",
@@ -200,16 +216,16 @@ export function AdminConsole({
   return (
     <div className="space-y-8">
       {/* Top Banner with Active Admin Identity and Logout */}
-      <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-xs sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex flex-col gap-4 rounded-3xl border border-line bg-surface p-6 shadow-card sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Authenticated Session: <span className="text-emerald-700 dark:text-emerald-400">@{adminUsername}</span>
+            <span className="flex h-2.5 w-2.5 rounded-full bg-success" />
+            <h2 className="text-xl font-bold tracking-tight text-fg">
+              Authenticated Session: <span className="text-success">@{adminUsername}</span>
             </h2>
           </div>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Per-admin audit trail active. All verification timestamps and record mutations are attributed to your identity.
+          <p className="mt-1 text-xs text-muted">
+            Every change and verification you make is recorded in the audit log under your name.
           </p>
         </div>
 
@@ -219,7 +235,7 @@ export function AdminConsole({
               setEditingExam(undefined);
               setExamModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary min-h-11 px-3.5 text-sm font-semibold text-white shadow-card hover:bg-primary-hover"
           >
             <Plus className="h-3.5 w-3.5" />
             New Exam
@@ -230,78 +246,86 @@ export function AdminConsole({
               setEditingScheme(undefined);
               setSchemeModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary min-h-11 px-3.5 text-sm font-semibold text-white shadow-card hover:bg-primary-hover"
           >
             <Plus className="h-3.5 w-3.5" />
             New Scheme
           </button>
 
+          <a
+            href="/admin/sources"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-surface px-3.5 text-sm font-semibold text-fg hover:bg-surface-muted"
+          >
+            <RefreshCw className="h-4 w-4" aria-hidden />
+            Sources &amp; review queue
+          </a>
+
           <button
             onClick={handleLogout}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-surface min-h-11 px-3.5 text-sm font-semibold text-muted shadow-card hover:bg-surface-muted"
           >
-            <LogOut className="h-3.5 w-3.5 text-slate-500" />
+            <LogOut className="h-3.5 w-3.5 text-muted" />
             Sign Out
           </button>
         </div>
       </div>
 
       {message && (
-        <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
-          <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600" />
+        <div className="flex items-center gap-2 rounded-2xl border border-success-line bg-success-bg p-4 text-xs font-semibold text-success">
+          <CheckCircle className="h-4 w-4 shrink-0 text-success" />
           <span>{message}</span>
         </div>
       )}
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-card">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Published Exams</span>
-            <FileText className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Published Exams</span>
+            <FileText className="h-4 w-4 text-muted" />
           </div>
-          <p className="mt-3 text-3xl font-extrabold text-slate-900 dark:text-white">{stats.totalExams}</p>
-          <p className="mt-1 text-[11px] text-slate-500">100% Gazette backed</p>
+          <p className="mt-3 text-3xl font-extrabold text-fg">{stats.totalExams}</p>
+          <p className="mt-1 text-sm text-muted">Live on the public site</p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-card">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Published Schemes</span>
-            <Database className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Published Schemes</span>
+            <Database className="h-4 w-4 text-muted" />
           </div>
-          <p className="mt-3 text-3xl font-extrabold text-slate-900 dark:text-white">{stats.totalSchemes}</p>
-          <p className="mt-1 text-[11px] text-slate-500">100% Ministry backed</p>
+          <p className="mt-3 text-3xl font-extrabold text-fg">{stats.totalSchemes}</p>
+          <p className="mt-1 text-sm text-muted">Live on the public site</p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-card">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Conducting Bodies</span>
-            <Building2 className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Pending reviews</span>
+            <Building2 className="h-4 w-4 text-muted" />
           </div>
-          <p className="mt-3 text-3xl font-extrabold text-slate-900 dark:text-white">{stats.totalOrgs}</p>
-          <p className="mt-1 text-[11px] text-slate-400">Central & State entities</p>
+          <p className="mt-3 text-3xl font-extrabold text-fg">{stats.pendingReviews}</p>
+          <a href="/admin/sources" className="mt-1 inline-block text-sm font-semibold text-link underline">Open review queue</a>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-card">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Verification Audits</span>
-            <ShieldCheck className="h-4 w-4 text-emerald-600" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Verification Audits</span>
+            <ShieldCheck className="h-4 w-4 text-success" />
           </div>
-          <p className="mt-3 text-3xl font-extrabold text-slate-900 dark:text-white">{stats.totalVerifications}</p>
-          <p className="mt-1 text-[11px] text-slate-400">Total audits recorded</p>
+          <p className="mt-3 text-3xl font-extrabold text-fg">{stats.totalVerifications}</p>
+          <p className="mt-1 text-sm text-muted">Total audits recorded</p>
         </div>
       </div>
 
       {/* Tabs and Search Header */}
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5 dark:border-slate-800">
+      <div className="rounded-3xl border border-line bg-surface p-6 shadow-card">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-line pb-5">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setActiveTab("exams")}
               className={`rounded-xl px-4 py-2 text-xs font-bold transition-colors ${
                 activeTab === "exams"
-                  ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                  ? "bg-primary text-white"
+                  : "bg-surface-muted text-muted hover:bg-surface-muted"
               }`}
             >
               Government Exams ({exams.length})
@@ -310,8 +334,8 @@ export function AdminConsole({
               onClick={() => setActiveTab("schemes")}
               className={`rounded-xl px-4 py-2 text-xs font-bold transition-colors ${
                 activeTab === "schemes"
-                  ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                  ? "bg-primary text-white"
+                  : "bg-surface-muted text-muted hover:bg-surface-muted"
               }`}
             >
               Citizen Schemes ({schemes.length})
@@ -320,13 +344,13 @@ export function AdminConsole({
 
           {/* Search form */}
           <form method="GET" className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted" />
             <input
               type="text"
               name="search"
               defaultValue={pagination.search}
               placeholder="Search all records..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="w-full rounded-xl border border-line bg-surface-muted py-1.5 pl-8 pr-3 text-xs text-fg placeholder:text-muted focus:bg-surface"
             />
           </form>
         </div>
@@ -335,7 +359,7 @@ export function AdminConsole({
         {activeTab === "exams" && (
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-200 text-slate-400 uppercase tracking-wider dark:border-slate-800">
+              <thead className="border-b border-line text-muted uppercase tracking-wider">
                 <tr>
                   <th className="py-3 px-3">Opportunity</th>
                   <th className="py-3 px-3">Conducting Body</th>
@@ -344,36 +368,36 @@ export function AdminConsole({
                   <th className="py-3 px-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-line">
                 {exams.map((e) => (
-                  <tr key={e.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                  <tr key={e.id} className="hover:bg-surface-muted">
                     <td className="py-3.5 px-3">
-                      <div className="font-semibold text-slate-900 dark:text-white">{e.name}</div>
-                      <div className="text-[10px] text-slate-400 font-mono">{e.slug}</div>
+                      <div className="font-semibold text-fg">{e.name}</div>
+                      <div className="text-xs text-muted font-mono">{e.slug}</div>
                     </td>
-                    <td className="py-3.5 px-3 text-slate-600 dark:text-slate-400">{e.conductingBody}</td>
+                    <td className="py-3.5 px-3 text-muted">{e.conductingBody}</td>
                     <td className="py-3.5 px-3">
                       <div className="flex flex-wrap gap-1">
                         <span
-                          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                          className={`rounded px-1.5 py-0.5 text-xs font-semibold ${
                             e.isPublished
-                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
-                              : "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
+                              ? "bg-success-bg text-success"
+                              : "bg-urgent-bg text-urgent"
                           }`}
                         >
                           {e.isPublished ? "Live" : "Draft"}
                         </span>
                         {e.isArchived && (
-                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                          <span className="rounded bg-surface-muted px-1.5 py-0.5 text-xs font-semibold text-muted">
                             Archived
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="py-3.5 px-3 text-slate-600 dark:text-slate-400">
+                    <td className="py-3.5 px-3 text-muted">
                       {verifiedMap[e.id] ?? (e.lastVerifiedAt ? formatDateIST(e.lastVerifiedAt) : "Never")}
                       {e.lastVerifiedBy && (
-                        <div className="text-[10px] text-slate-400">by @{e.lastVerifiedBy}</div>
+                        <div className="text-xs text-muted">by @{e.lastVerifiedBy}</div>
                       )}
                     </td>
                     <td className="py-3.5 px-3 text-right">
@@ -383,7 +407,7 @@ export function AdminConsole({
                             setEditingExam(e);
                             setExamModalOpen(true);
                           }}
-                          className="rounded-lg border border-slate-200 p-1 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300"
+                          className="rounded-lg border border-line p-1 text-muted hover:bg-surface-muted"
                           title="Edit Exam"
                         >
                           <Edit2 className="h-3.5 w-3.5" />
@@ -391,7 +415,7 @@ export function AdminConsole({
                         <button
                           onClick={() => handleTogglePublish("exam", e.id, e.isPublished, e.name)}
                           disabled={actionLoadingId === e.id}
-                          className="rounded-lg border border-slate-200 p-1 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300"
+                          className="rounded-lg border border-line p-1 text-muted hover:bg-surface-muted"
                           title={e.isPublished ? "Unpublish" : "Publish"}
                         >
                           {e.isPublished ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -399,7 +423,7 @@ export function AdminConsole({
                         <button
                           onClick={() => handleToggleArchive("exam", e.id, e.isArchived, e.name)}
                           disabled={actionLoadingId === e.id}
-                          className="rounded-lg border border-slate-200 p-1 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300"
+                          className="rounded-lg border border-line p-1 text-muted hover:bg-surface-muted"
                           title={e.isArchived ? "Unarchive" : "Archive"}
                         >
                           <Archive className="h-3.5 w-3.5" />
@@ -407,7 +431,7 @@ export function AdminConsole({
                         <button
                           onClick={() => handleVerify("exam", e.id, e.name)}
                           disabled={verifyingId === e.id}
-                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300"
+                          className="inline-flex items-center gap-1 rounded-lg bg-success-bg px-2 py-1 text-xs font-semibold text-success ring-1 ring-inset ring-success-line hover:bg-success-bg"
                         >
                           <RefreshCw className={`h-3 w-3 ${verifyingId === e.id ? "animate-spin" : ""}`} />
                           Verify
@@ -425,7 +449,7 @@ export function AdminConsole({
         {activeTab === "schemes" && (
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-200 text-slate-400 uppercase tracking-wider dark:border-slate-800">
+              <thead className="border-b border-line text-muted uppercase tracking-wider">
                 <tr>
                   <th className="py-3 px-3">Scheme Name</th>
                   <th className="py-3 px-3">Ministry / Dept</th>
@@ -434,36 +458,36 @@ export function AdminConsole({
                   <th className="py-3 px-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-line">
                 {schemes.map((s) => (
-                  <tr key={s.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                  <tr key={s.id} className="hover:bg-surface-muted">
                     <td className="py-3.5 px-3">
-                      <div className="font-semibold text-slate-900 dark:text-white">{s.name}</div>
-                      <div className="text-[10px] text-slate-400 font-mono">{s.slug}</div>
+                      <div className="font-semibold text-fg">{s.name}</div>
+                      <div className="text-xs text-muted font-mono">{s.slug}</div>
                     </td>
-                    <td className="py-3.5 px-3 text-slate-600 dark:text-slate-400">{s.department}</td>
+                    <td className="py-3.5 px-3 text-muted">{s.department}</td>
                     <td className="py-3.5 px-3">
                       <div className="flex flex-wrap gap-1">
                         <span
-                          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                          className={`rounded px-1.5 py-0.5 text-xs font-semibold ${
                             s.isPublished
-                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
-                              : "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
+                              ? "bg-success-bg text-success"
+                              : "bg-urgent-bg text-urgent"
                           }`}
                         >
                           {s.isPublished ? "Live" : "Draft"}
                         </span>
                         {s.isArchived && (
-                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                          <span className="rounded bg-surface-muted px-1.5 py-0.5 text-xs font-semibold text-muted">
                             Archived
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="py-3.5 px-3 text-slate-600 dark:text-slate-400">
+                    <td className="py-3.5 px-3 text-muted">
                       {verifiedMap[s.id] ?? (s.lastVerifiedAt ? formatDateIST(s.lastVerifiedAt) : "Never")}
                       {s.lastVerifiedBy && (
-                        <div className="text-[10px] text-slate-400">by @{s.lastVerifiedBy}</div>
+                        <div className="text-xs text-muted">by @{s.lastVerifiedBy}</div>
                       )}
                     </td>
                     <td className="py-3.5 px-3 text-right">
@@ -473,7 +497,7 @@ export function AdminConsole({
                             setEditingScheme(s);
                             setSchemeModalOpen(true);
                           }}
-                          className="rounded-lg border border-slate-200 p-1 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300"
+                          className="rounded-lg border border-line p-1 text-muted hover:bg-surface-muted"
                           title="Edit Scheme"
                         >
                           <Edit2 className="h-3.5 w-3.5" />
@@ -481,7 +505,7 @@ export function AdminConsole({
                         <button
                           onClick={() => handleTogglePublish("scheme", s.id, s.isPublished, s.name)}
                           disabled={actionLoadingId === s.id}
-                          className="rounded-lg border border-slate-200 p-1 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300"
+                          className="rounded-lg border border-line p-1 text-muted hover:bg-surface-muted"
                           title={s.isPublished ? "Unpublish" : "Publish"}
                         >
                           {s.isPublished ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -489,7 +513,7 @@ export function AdminConsole({
                         <button
                           onClick={() => handleToggleArchive("scheme", s.id, s.isArchived, s.name)}
                           disabled={actionLoadingId === s.id}
-                          className="rounded-lg border border-slate-200 p-1 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300"
+                          className="rounded-lg border border-line p-1 text-muted hover:bg-surface-muted"
                           title={s.isArchived ? "Unarchive" : "Archive"}
                         >
                           <Archive className="h-3.5 w-3.5" />
@@ -497,7 +521,7 @@ export function AdminConsole({
                         <button
                           onClick={() => handleVerify("scheme", s.id, s.name)}
                           disabled={verifyingId === s.id}
-                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300"
+                          className="inline-flex items-center gap-1 rounded-lg bg-success-bg px-2 py-1 text-xs font-semibold text-success ring-1 ring-inset ring-success-line hover:bg-success-bg"
                         >
                           <RefreshCw className={`h-3 w-3 ${verifyingId === s.id ? "animate-spin" : ""}`} />
                           Verify
