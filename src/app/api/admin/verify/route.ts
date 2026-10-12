@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedAdmin } from "@/server/auth/session";
 import { verificationActionSchema } from "@/validation/admin-schema";
 import { verificationService } from "@/server/services/verification-service";
+import { writeAudit } from "@/server/services/audit";
+import { apiFailure } from "@/server/services/load";
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,10 +26,15 @@ export async function POST(request: NextRequest) {
       verifiedBy: adminIdentity,
     });
 
-    console.info(`[VERIFICATION AUDIT] Record verified by "${adminIdentity}": ${JSON.stringify(validated.data)}`);
+    await writeAudit({
+      actor: adminIdentity,
+      action: "verification.record",
+      entityType: record.examId ? "exam" : "scheme",
+      entityId: record.examId ?? record.schemeId ?? "unknown",
+      changes: { notes: record.notes },
+    });
     return NextResponse.json({ success: true, record });
   } catch (error) {
-    console.error("Verification error:", error);
-    return NextResponse.json({ error: "Failed to record verification" }, { status: 500 });
+    return apiFailure("ADMIN_VERIFY", error);
   }
 }

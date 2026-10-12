@@ -45,4 +45,5 @@ USER nextjs
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+# Apply pending migrations (idempotent), then start. Seed is NOT run in production.
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start"]

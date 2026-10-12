@@ -1,0 +1,670 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head id="Head1"><meta charset="utf-8" /><meta content="width=device-width, initial-scale=1.0" name="viewport" /><title>
+	TNPSC
+</title>
+    <!-- Favicons -->
+    <link rel="icon" href="../theme/assets/img/tnpsc_32x32.png" sizes="32x32" /><link rel="icon" href="../theme/assets/img/tnpsc_192x192.png" sizes="192x192" /><link rel="apple-touch-icon" href="../theme/assets/img/tnpsc_180x180.png" /><meta name="description" /><meta name="keywords" />
+    <!-- Google Fonts -->
+    <link href="https://fonts.gstatic.com" rel="preconnect" /><link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i" rel="stylesheet" />
+    <!-- Vendor CSS Files -->
+    <link href="../theme/assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" /><link href="../theme/assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet" />
+    <!-- Template Main CSS File -->
+    <link href="../theme/assets/css/style.css" rel="stylesheet" />
+     
+	<style>
+        body
+        {            
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card
+        {
+            /* transition: transform 0.3s ease-in-out; */
+            cursor: pointer;
+        }
+        .card-new
+        {
+            border-top: 3px solid #F44336;
+        }
+        
+        .bi
+        {
+            position: relative;
+            font-size: 24px;
+        }
+        
+        header
+        {
+            background-color: #fff;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
+        .header-content
+        {
+            display: flex;
+            align-items: left;
+        }
+        .header-logo img
+        {
+            max-height: 80px;
+            margin-right: 10px;
+        }
+        .header-text
+        {
+            vertical-align: top;
+            text-align: left;
+        }
+        .header-line1
+        {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .header-line2
+        {
+            font-size: 24px;
+            margin: 5px 0;
+            color: #555;
+            font-weight: bold;
+        }
+        .header-line3
+        {
+            font-size: 15px;
+            margin: 5px 0;
+            color: #555;
+            font-weight: bold;
+        }
+        
+        .footer1 {
+            background-color: #fff;
+            color: #fff;
+            text-align: center;
+            padding: 10px 0;
+        }
+        
+        .container {
+            margin: 10px auto;
+            padding: 0 10px;
+        }
+
+        .section {
+            padding: 20px;
+            background-color: #fff;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .content {
+            flex: 1;
+            padding: 0px 10px;
+        }
+
+        /* ================= Standalone Self-Contained Modal Styling ================= */
+        .custom-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.55);
+            z-index: 99999;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .custom-modal-overlay.active {
+            display: flex;
+        }
+
+        .custom-modal-box {
+            background: #ffffff;
+            width: 100%;
+            max-width: 430px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            animation: modalFadeIn 0.25s ease-out;
+            position: relative;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .custom-modal-header {
+            background-color: #f8f9fa;
+            padding: 15px 20px 10px 20px;
+            text-align: center;
+            border-bottom: 1px solid #e9ecef;
+            position: relative;
+        }
+
+        .custom-modal-header img {
+            max-height: 60px;
+            margin-bottom: 6px;
+        }
+
+        .custom-modal-header .title-ta {
+            font-size: 14px;
+            font-weight: bold;
+            color: #212529;
+            margin: 0;
+        }
+
+        .custom-modal-header .title-en {
+            font-size: 11px;
+            color: #6c757d;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .custom-modal-close {
+            position: absolute;
+            top: 10px;
+            right: 14px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            line-height: 1;
+            color: #888;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .custom-modal-close:hover {
+            color: #000;
+        }
+
+        .custom-modal-body {
+            padding: 15px 25px 20px 25px;
+            text-align: center;
+        }
+
+        .security-badge {
+            display: inline-block;
+            background-color: #e7f1ff;
+            color: #0c63e4;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 8px;
+        }
+
+        .instruction-text {
+            color: #6c757d;
+            font-size: 13px;
+            margin: 0 0 12px 0;
+        }
+
+        .captcha-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        #captchaCanvas {
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            background-color: #f8f9fa;
+        }
+
+        .btn-refresh {
+            background-color: #f8f9fa;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            width: 40px;
+            height: 48px;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+        }
+
+        .btn-refresh:hover {
+            background-color: #e9ecef;
+        }
+
+        .captcha-input {
+            width: 100%;
+            padding: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .captcha-input:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+        }
+
+        .captcha-error {
+            color: #dc3545;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 6px;
+            display: none;
+        }
+
+        .custom-modal-footer {
+            background-color: #f8f9fa;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .btn-modal {
+            padding: 8px 18px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .btn-modal-cancel {
+            background-color: #6c757d;
+            color: #fff;
+        }
+
+        .btn-modal-cancel:hover {
+            background-color: #5c636a;
+        }
+
+        .btn-modal-submit {
+            background-color: #0d6efd;
+            color: #fff;
+        }
+
+        .btn-modal-submit:hover {
+            background-color: #0b5ed7;
+        }
+    </style>
+</head>
+<body class="toggle-sidebar">
+    
+    <!-- ======= Header ======= -->
+    <header>
+        <div class="header-content">
+            <div class="header-logo">
+                <img src="/web/theme/assets/img/tnpsc_logo.jpg" onerror="this.onerror=null; this.src='images/tnpsc_logo.jpg';" alt="Logo" />
+            </div>
+            <div class="header-text">
+                <div class="header-line1">தமிழ்நாடு அரசுப் பணியாளர் தேர்வாணையம்</div>
+                <div class="header-line2">TAMIL NADU PUBLIC SERVICE COMMISSION</div>
+            </div>
+        </div>
+    </header>
+    <!-- End Header -->
+
+    <div class="content">
+        <div class="container">
+            <form method="post" action="./index.aspx" id="form1" autocomplete="off" enctype="multipart/form-data">
+<input type="hidden" name="__CSRF_TOKEN" id="__CSRF_TOKEN" value="24k8+jUi9yH9o3J2OISVsxcw3lKzXP731sUlk+pEsI0=" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="" />
+
+<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="" />
+<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="" />
+                <div class="pagetitle" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h1>Exam Dashboard</h1>
+                    <div class="text-right"> 
+                        Year :
+                        <select name="ddlYear" id="ddlYear" class="form-select" style="display: inline; width: auto;">
+	<option selected="selected" value="2026">2026</option>
+	<option value="2025">2025</option>
+
+</select>
+                        <a href="https://tnpsc.gov.in/English/Examdashboard.aspx" target="_blank" class="btn btn-primary">Archives</a>
+                        <a href="https://tnpsc.gov.in/home.aspx" class="btn btn-warning">Home Page</a>
+                        <a href="indextamil.aspx" class="btn btn-success">தமிழ்</a>
+                        
+                    </div>
+                </div>             
+ 
+                
+                        <div id="examlist" class="container mt-4">
+                            <div class="row row-cols-1 row-cols-md-4 g-2">
+                    
+                        <div class="col">
+                            <div class="card h-100 text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <a style="color:#012970" 
+                                           href="index.aspx?notid=16f23df0-a669-4855-a718-8083a5745077" 
+                                           target="_self">1. RASHTRIYA INDIAN MILITARY COLLEGE, DEHRADUN (JANUARY-2027 TERM) - 01/2026
+                                        </a>
+                                    </h5>
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="col">
+                            <div class="card h-100 text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <a style="color:#012970" 
+                                           href="index.aspx?notid=024fc5d2-a6b0-4c29-93db-979bf485d544" 
+                                           target="_self">2. COMBINED TECHNICAL SERVICES EXAMINATION (NON – INTERVIEW POSTS) -  04/2026
+                                        </a>
+                                    </h5>
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="col">
+                            <div class="card h-100 text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <a style="color:#012970" 
+                                           href="index.aspx?notid=33aa5415-6205-4ae9-842e-212d62d088f1" 
+                                           target="_self">3. COMBINED CIVIL SERVICES EXAMINATION – I (GROUP I SERVICES) - 05/2026
+                                        </a>
+                                    </h5>
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="col">
+                            <div class="card h-100 text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <a style="color:#012970" 
+                                           href="index.aspx?notid=ea45cb0a-2d35-4b46-a38d-f05d6ee0965b" 
+                                           target="_self">4. COMBINED TECHNICAL SERVICES EXAMINATION  (DIPLOMA / ITI LEVEL) - 06/2026
+                                        </a>
+                                    </h5>
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="col">
+                            <div class="card h-100 text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <a style="color:#012970" 
+                                           href="index.aspx?notid=89113de0-6a0e-4d47-a409-c84fb04ef33e" 
+                                           target="_self">5. COMBINED CIVIL SERVICES EXAMINATION - II  (GROUP II AND IIA SERVICES) - 07/2026
+                                        </a>
+                                    </h5>
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="col">
+                            <div class="card h-100 text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <a style="color:#012970" 
+                                           href="index.aspx?notid=cf52b42c-7e4d-4d72-a8bf-77adf8242159" 
+                                           target="_self">6. COMBINED TECHNICAL SERVICES EXAMINATION (INTERVIEW POSTS) - 08/2026
+                                        </a>
+                                    </h5>
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="col">
+                            <div class="card h-100 text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <a style="color:#012970" 
+                                           href="index.aspx?notid=7a880763-80dc-4c3a-bbbe-81b6a3a75a87" 
+                                           target="_self">7. COMBINED CIVIL SERVICES EXAMINATION - IV  (GROUP IV SERVICES) - 11/2026
+                                        </a>
+                                    </h5>
+                                </div>
+                            </div>
+                        </div>
+                    
+                            </div>
+                        </div>
+                    	
+
+                
+
+                <!-- ================= STANDALONE TNPSC MODAL ================= -->
+                <div class="custom-modal-overlay" id="captchaModal">
+                    <div class="custom-modal-box">
+                        
+                        <div class="custom-modal-header">
+                            <button type="button" class="custom-modal-close" onclick="closeCaptchaModal()">&times;</button>
+                            <img src="/web/theme/assets/img/tnpsc_logo.jpg" onerror="this.onerror=null; this.src='images/tnpsc_logo.jpg';" alt="TNPSC Logo" />
+                            <p class="title-ta">தமிழ்நாடு அரசுப் பணியாளர் தேர்வாணையம்</p>
+                            <p class="title-en">TAMIL NADU PUBLIC SERVICE COMMISSION</p>
+                        </div>
+
+                        <div class="custom-modal-body">
+                            <div class="security-badge">&#128274; Security Verification</div>
+                            <p class="instruction-text">Please enter the alphanumeric code to open the document.</p>
+                            
+                            <div class="captcha-row">
+                                <canvas id="captchaCanvas" width="190" height="48"></canvas>
+                                <button type="button" class="btn-refresh" id="btnRefreshCaptcha" title="Refresh Captcha">&#x21bb;</button>
+                            </div>
+
+                            <input type="text" id="txtCaptchaInput" class="captcha-input" 
+                                   placeholder="ENTER CAPTCHA" maxlength="6" autocomplete="off" oninput="this.value = this.value.toUpperCase()" />
+                            
+                            <div id="captchaError" class="captcha-error">&#9888; Invalid captcha! Please try again.</div>
+                        </div>
+
+                        <div class="custom-modal-footer">
+                            <button type="button" class="btn-modal btn-modal-cancel" onclick="closeCaptchaModal()">Cancel</button>
+                            <button type="button" class="btn-modal btn-modal-submit" id="btnVerifyCaptcha">Submit & Open</button>
+                        </div>
+
+                    </div>
+                </div>
+                <!-- ================= END MODAL ================= -->
+
+            </form>
+        </div>
+    </div>
+    
+    <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+    <!-- Vendor JS Files -->
+    <script src='/web/theme/assets/vendor/jquery/jquery-1.11.1.min.js' type="text/javascript"></script>
+    <script src='/web/theme/assets/vendor/jquery/jquery-ui.min.js' type="text/javascript"></script>
+    <script src='/web/theme/assets/vendor/jquery/form-validation.js' type="text/javascript"></script>
+    <script type="text/javascript" src='/web/theme/assets/vendor/bootstrap/js/bootstrap.bundle.min.js'></script>
+
+    <script type="text/javascript">
+        window.addEventListener("pageshow", function (event) {
+            var historyTraversal = event.persisted ||
+                (typeof window.performance != "undefined" &&
+                    window.performance.navigation.type === 2);
+            if (historyTraversal) {
+                window.location.reload();
+            }
+        });
+
+        document.querySelectorAll(".toggle-btn").forEach(btn => {
+            btn.addEventListener("click", function () {
+                let detailsRow = this.closest("tr").nextElementSibling;
+                let icon = this.querySelector("i");
+
+                if (detailsRow.style.display === "table-row") {
+                    detailsRow.style.display = "none";
+                    icon.classList.remove("bi-chevron-up");
+                    icon.classList.add("bi-chevron-down");
+                } else {
+                    detailsRow.style.display = "table-row";
+                    icon.classList.remove("bi-chevron-down");
+                    icon.classList.add("bi-chevron-up");
+                }
+            });
+        });
+
+        /* ================= GUARANTEED CAPITAL LETTERS & NUMBERS CAPTCHA ================= */
+        var targetLinkUrl = '';
+        var currentCaptchaCode = '';
+
+        function generateRandomCaptcha(length) {
+            length = length || 6;
+            var letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+            var numbers = '23456789';
+            var allChars = letters + numbers;
+
+            var charsArr = [];
+            for (var a = 0; a < 3; a++) {
+                charsArr.push(letters.charAt(Math.floor(Math.random() * letters.length)));
+            }
+            for (var b = 0; b < 2; b++) {
+                charsArr.push(numbers.charAt(Math.floor(Math.random() * numbers.length)));
+            }
+            charsArr.push(allChars.charAt(Math.floor(Math.random() * allChars.length)));
+
+            charsArr.sort(function () { return 0.5 - Math.random(); });
+            return charsArr.join('');
+        }
+
+        function drawCaptcha() {
+            var canvas = document.getElementById('captchaCanvas');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            currentCaptchaCode = generateRandomCaptcha(6);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#f0f3f6';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Lines
+            for (var i = 0; i < 4; i++) {
+                ctx.strokeStyle = '#999999';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+                ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+                ctx.stroke();
+            }
+
+            // Characters with rotation
+            var colors = ['#012970', '#d9534f', '#28a745', '#495057', '#6f42c1'];
+            var spacing = canvas.width / (currentCaptchaCode.length + 1);
+            for (var j = 0; j < currentCaptchaCode.length; j++) {
+                var char = currentCaptchaCode[j];
+                ctx.save();
+                ctx.font = 'bold 23px Arial, sans-serif';
+                ctx.fillStyle = colors[j % colors.length];
+
+                var x = (j + 0.8) * spacing;
+                var y = 33 + (Math.random() * 6 - 3);
+                var angle = (Math.random() * 24 - 12) * (Math.PI / 180);
+
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                ctx.fillText(char, -7, 0);
+                ctx.restore();
+            }
+
+            // Dots
+            for (var k = 0; k < 25; k++) {
+                ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                ctx.beginPath();
+                ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 1, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function openCaptchaModal(url) {
+            targetLinkUrl = url;
+            document.getElementById('txtCaptchaInput').value = '';
+            document.getElementById('captchaError').style.display = 'none';
+            drawCaptcha();
+
+            document.getElementById('captchaModal').classList.add('active');
+            setTimeout(function () {
+                document.getElementById('txtCaptchaInput').focus();
+            }, 200);
+        }
+
+        function closeCaptchaModal() {
+            document.getElementById('captchaModal').classList.remove('active');
+        }
+
+        function verifyCaptcha() {
+            var userInput = document.getElementById('txtCaptchaInput').value.trim().toUpperCase();
+            var errorEl = document.getElementById('captchaError');
+
+            if (userInput === currentCaptchaCode && userInput.length > 0) {
+                errorEl.style.display = 'none';
+                closeCaptchaModal();
+                if (targetLinkUrl) {
+                    window.open(targetLinkUrl, '_blank');
+                }
+            } else {
+                errorEl.style.display = 'block';
+                drawCaptcha();
+                document.getElementById('txtCaptchaInput').value = '';
+                document.getElementById('txtCaptchaInput').focus();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Intercept all table links (View, Open, Subject keys)
+            document.body.addEventListener('click', function (e) {
+                var link = e.target.closest('.exam table tbody a');
+                if (link && !link.classList.contains('toggle-btn')) {
+                    var href = link.getAttribute('href');
+                    if (href && href !== '#' && !href.startsWith('javascript:')) {
+                        e.preventDefault();
+                        openCaptchaModal(href);
+                    }
+                }
+            });
+
+            // Close on background click
+            document.getElementById('captchaModal').addEventListener('click', function (e) {
+                if (e.target === this) {
+                    closeCaptchaModal();
+                }
+            });
+
+            // Refresh button
+            document.getElementById('btnRefreshCaptcha').addEventListener('click', function () {
+                drawCaptcha();
+                document.getElementById('txtCaptchaInput').value = '';
+                document.getElementById('captchaError').style.display = 'none';
+                document.getElementById('txtCaptchaInput').focus();
+            });
+
+            // Submit button
+            document.getElementById('btnVerifyCaptcha').addEventListener('click', verifyCaptcha);
+
+            // Enter key trigger
+            document.getElementById('txtCaptchaInput').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    verifyCaptcha();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

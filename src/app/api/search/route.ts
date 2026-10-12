@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchService } from "@/server/services/search-service";
+import { apiFailure } from "@/server/services/load";
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +21,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data: results });
   } catch (error) {
-    console.error("API /api/search error:", error);
-    return NextResponse.json({ error: "Search failed" }, { status: 500 });
+    return apiFailure("API_SEARCH", error);
   }
 }

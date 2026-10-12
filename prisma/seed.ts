@@ -1,11 +1,24 @@
 import { PrismaClient, OrgType, SourceType } from "@prisma/client";
+import { registerSources } from "../src/server/ingestion/registry";
 
 const prisma = new PrismaClient();
 
+/**
+ * Development/demo dataset.
+ * DATA TRUTH: this seed records NO verifications and NO application/exam dates. Descriptions and
+ * official URLs come from the original dataset but have not been re-checked, so every record shows
+ * "Not yet verified" until an admin verifies it or a monitored source confirms it.
+ * Real dates enter through the source pipeline (npm run sources:check) and admin review.
+ */
 async function main() {
-  console.log("Starting GovernIT Verified Dataset Seeding...");
+  console.log("Seeding GovernIT development dataset (unverified, no dates)...");
 
   // Clear existing data cleanly in reverse order of foreign keys
+  await prisma.changeCandidate.deleteMany({});
+  await prisma.sourceCheck.deleteMany({});
+  await prisma.jobRun.deleteMany({});
+  await prisma.linkCheck.deleteMany({});
+  await prisma.auditLog.deleteMany({});
   await prisma.examCategory.deleteMany({});
   await prisma.schemeCategory.deleteMany({});
   await prisma.verification.deleteMany({});
@@ -17,6 +30,7 @@ async function main() {
   await prisma.category.deleteMany({});
   await prisma.state.deleteMany({});
   await prisma.organization.deleteMany({});
+  await prisma.monitoredSource.deleteMany({});
 
   console.log("Cleared existing records.");
 
@@ -566,7 +580,8 @@ async function main() {
     },
   ];
 
-  for (const ex of exams) {
+  // TNPSC listings come from the live TNPSC source (auto-published with official dates), not the seed.
+  for (const ex of exams.filter((e) => e.org !== "Tamil Nadu Public Service Commission (TNPSC)")) {
     const orgId = orgMap[ex.org];
     const stateId = ex.stateCode ? stateMap[ex.stateCode] : null;
 
@@ -579,42 +594,31 @@ async function main() {
         educationEligibility: ex.education,
         ageEligibility: ex.age,
         stateId: stateId,
-        examDate: ex.examDate,
-        admitCardDate: ex.admitCardDate,
-        resultStatus: ex.resultStatus,
+        // Original dataset dates were generated relative to "now" (invented), so none are stored.
+        examDate: null,
+        admitCardDate: null,
+        resultStatus: null,
         applicationFee: ex.fee,
         vacancyCount: ex.vacancies,
         officialApplyUrl: ex.applyUrl,
+        applyLinkKind: "APPLICATION_PORTAL",
         isPublished: true,
         isArchived: false,
-        applicationPeriod: {
-          create: {
-            opensAt: ex.opensAt,
-            closesAt: ex.closesAt,
-          },
-        },
+        applicationPeriod: { create: { opensAt: null, closesAt: null } },
         sources: {
           create: [
             {
+              // A general official page, not a specific notification: labelled as such.
               url: ex.sourceUrl,
-              type: SourceType.OFFICIAL_NOTIFICATION,
-              title: ex.sourceTitle,
-              retrievedAt: new Date(),
+              type: SourceType.OTHER_OFFICIAL,
+              title: `${ex.org} official website`,
             },
             {
               url: ex.applyUrl,
               type: SourceType.OFFICIAL_APPLICATION_PORTAL,
-              title: "Direct Application Portal",
-              retrievedAt: new Date(),
+              title: "Official application portal",
             },
           ],
-        },
-        verifications: {
-          create: {
-            verifiedAt: new Date(),
-            verifiedBy: "editorial_audit",
-            notes: "Verified against authoritative gazette notification and recruitment portal.",
-          },
         },
         eligibilityCriteria: {
           create: {
@@ -640,7 +644,7 @@ async function main() {
     }
   }
 
-  console.log(`Seeded ${exams.length} government exams.`);
+  console.log(`Seeded ${await prisma.exam.count()} government exams.`);
 
   // 5. Seed Schemes (22 Verified Central & State Welfare Schemes)
   const schemes = [
@@ -1034,7 +1038,8 @@ async function main() {
         benefits: sc.benefits,
         requiredDocuments: sc.requiredDocuments,
         applicationProcess: sc.process,
-        deadline: sc.deadline,
+        // Original "no deadline" meant continuous enrolment; invented future deadlines are dropped.
+        applicationPeriod: { create: { opensAt: null, closesAt: null, isRolling: sc.deadline === null } },
         stateId: stateId,
         officialApplyUrl: sc.applyUrl,
         isPublished: true,
@@ -1045,22 +1050,13 @@ async function main() {
               url: sc.sourceUrl,
               type: SourceType.OFFICIAL_GUIDELINE,
               title: sc.sourceTitle,
-              retrievedAt: new Date(),
             },
             {
               url: sc.applyUrl,
               type: SourceType.OFFICIAL_APPLICATION_PORTAL,
-              title: "Official Citizen Portal",
-              retrievedAt: new Date(),
+              title: "Official scheme portal",
             },
           ],
-        },
-        verifications: {
-          create: {
-            verifiedAt: new Date(),
-            verifiedBy: "editorial_audit",
-            notes: "Verified against ministry guidelines and official portal documents.",
-          },
         },
       },
     });
@@ -1079,7 +1075,9 @@ async function main() {
   }
 
   console.log(`Seeded ${schemes.length} government schemes.`);
-  console.log("GovernIT Initial Verified Dataset Successfully Seeded!");
+  const sources = await registerSources(prisma);
+  console.log(`Registered ${sources} monitored official sources.`);
+  console.log("Seed complete. Records are unverified until checked (see docs/OPERATIONS.md).");
 }
 
 main()

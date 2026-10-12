@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { schemeQuerySchema } from "@/validation/scheme-schema";
 import { schemeService } from "@/server/services/scheme-service";
+import { isApplicationActionable, isApplicationInactive } from "@/domain/status";
+import { apiFailure } from "@/server/services/load";
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,9 +31,9 @@ export async function GET(request: NextRequest) {
       if (status === "closing-soon") {
         schemes = schemes.filter((s) => s.status.status === "CLOSING_SOON");
       } else if (status === "open") {
-        schemes = schemes.filter((s) => s.status.status === "APPLICATION_OPEN" || s.status.status === "CLOSING_SOON");
+        schemes = schemes.filter((s) => isApplicationActionable(s.status.status));
       } else if (status === "closed") {
-        schemes = schemes.filter((s) => s.status.status === "CLOSED");
+        schemes = schemes.filter((s) => isApplicationInactive(s.status.status));
       }
       total = schemes.length;
     }
@@ -45,7 +47,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("API /api/schemes error:", error);
-    return NextResponse.json({ error: "Failed to retrieve schemes" }, { status: 500 });
+    return apiFailure("API_SCHEMES", error);
   }
 }

@@ -27,24 +27,20 @@ function parseAdminCredentials(): AdminCredential[] {
     }
   }
 
-  // Also include the primary admin user if not already defined
-  const primaryHash = crypto.createHash("sha256").update(env.ADMIN_SECRET).digest("hex");
-  if (!creds.some((c) => c.username === "admin")) {
-    creds.push({
-      username: "admin",
-      secretHash: primaryHash,
-    });
-  }
-
   return creds;
 }
+
+let adminUsersCache: AdminCredential[] | null = null;
 
 export const authConfig = {
   adminSecret: env.ADMIN_SECRET,
   authSecret: env.AUTH_SECRET,
   cookieName: AUTH_COOKIE_NAME,
   maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
-  adminUsers: parseAdminCredentials(),
+  /** Parsed on first use, so `next build` (which has no secrets) can import this module. */
+  get adminUsers(): AdminCredential[] {
+    return (adminUsersCache ??= parseAdminCredentials());
+  },
 };
 
 /**
@@ -64,13 +60,6 @@ export function verifyAdminCredentials(usernameInput: string, secretKeyInput: st
         return { valid: true, username: cred.username };
       }
     }
-  }
-
-  // If username wasn't specified or was "admin", check against adminSecret directly
-  const defaultAdminHash = crypto.createHash("sha256").update(authConfig.adminSecret).digest("hex");
-  const defaultHashBuf = Buffer.from(defaultAdminHash, "utf-8");
-  if (normalizedUsername === "admin" && inputHashBuf.length === defaultHashBuf.length && crypto.timingSafeEqual(inputHashBuf, defaultHashBuf)) {
-    return { valid: true, username: "admin" };
   }
 
   return { valid: false, username: normalizedUsername };

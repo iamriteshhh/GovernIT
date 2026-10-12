@@ -9,9 +9,15 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "db:push": "prisma db push",
+    "test:unit": "vitest run tests/unit tests/functional",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "node scripts/e2e-smoke.mjs",
+    "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma migrate reset --force --skip-seed && npm run db:seed",
+    "sources:register": "tsx scripts/register-sources.ts",
+    "sources:check": "tsx scripts/check-sources.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

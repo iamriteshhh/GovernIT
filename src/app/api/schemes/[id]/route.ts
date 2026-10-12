@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { schemeService } from "@/server/services/scheme-service";
+import { apiFailure } from "@/server/services/load";
 
 export async function GET(
   _request: NextRequest,
@@ -15,7 +16,6 @@ export async function GET(
 
     return NextResponse.json({ data: scheme });
   } catch (error) {
-    console.error("API /api/schemes/[id] error:", error);
-    return NextResponse.json({ error: "Failed to retrieve scheme details" }, { status: 500 });
+    return apiFailure("API_SCHEME_DETAIL", error);
   }
 }

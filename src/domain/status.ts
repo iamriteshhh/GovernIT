@@ -1,13 +1,25 @@
-import { calculateDaysLeftIST } from "@/lib/dates";
+import { calculateDaysLeftIST, formatDateIST, formatDateTimeIST } from "@/lib/dates";
 
-export type OpportunityStatus =
+export type LifecycleState = "ACTIVE" | "CANCELLED" | "WITHDRAWN" | "SUPERSEDED";
+
+export type ApplicationStatus =
+  | "NOT_ANNOUNCED"
+  | "UPCOMING"
   | "APPLICATION_OPEN"
   | "CLOSING_SOON"
   | "CLOSED"
+  | "CANCELLED"
+  | "WITHDRAWN"
+  | "SUPERSEDED";
+
+export type ExamScheduleStatus =
+  | "NOT_ANNOUNCED"
   | "EXAM_UPCOMING"
   | "EXAM_COMPLETED"
   | "RESULT_ANNOUNCED"
-  | "NOT_ANNOUNCED";
+  | "CANCELLED";
+
+export type OpportunityStatus = ApplicationStatus | ExamScheduleStatus;
 
 export interface StatusEvaluation {
   status: OpportunityStatus;
@@ -17,87 +29,132 @@ export interface StatusEvaluation {
   displayText: string;
 }
 
+export interface ApplicationWindow {
+  opensAt?: Date | string | null;
+  closesAt?: Date | string | null;
+  /** Officially continuous enrolment with no fixed deadline. */
+  isRolling?: boolean;
+  lifecycle?: LifecycleState;
+}
+
 export const CLOSING_SOON_THRESHOLD_DAYS = 7;
 
+const INACTIVE_LABELS: Record<Exclude<LifecycleState, "ACTIVE">, string> = {
+  CANCELLED: "Cancelled",
+  WITHDRAWN: "Withdrawn",
+  SUPERSEDED: "Superseded",
+};
+
+function toDate(v: Date | string | null | undefined): Date | null {
+  if (!v) return null;
+  const d = typeof v === "string" ? new Date(v) : v;
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/** Only these statuses mean "a user can submit an application right now". */
+export function isApplicationActionable(status: OpportunityStatus): boolean {
+  return status === "APPLICATION_OPEN" || status === "CLOSING_SOON";
+}
+
+/** Closed / cancelled / withdrawn / superseded: never shown as available or urgent. */
+export function isApplicationInactive(status: OpportunityStatus): boolean {
+  return status === "CLOSED" || status === "CANCELLED" || status === "WITHDRAWN" || status === "SUPERSEDED";
+}
+
 /**
- * Pure calculation function for application status and days left.
- * NO I/O, no direct database queries.
+ * Pure calculation of application status. NO I/O.
+ * A passed deadline is always CLOSED, whatever any stored field says.
  */
-export function evaluateApplicationStatus(
-  opensAt: Date | string | null | undefined,
-  closesAt: Date | string | null | undefined,
-  now: Date = new Date()
-): StatusEvaluation {
-  if (!opensAt && !closesAt) {
+export function evaluateApplicationStatus(window: ApplicationWindow, now: Date = new Date()): StatusEvaluation {
+  const lifecycle = window.lifecycle ?? "ACTIVE";
+  if (lifecycle !== "ACTIVE") {
     return {
-      status: "NOT_ANNOUNCED",
-      statusLabel: "Dates Not Announced",
+      status: lifecycle,
+      statusLabel: INACTIVE_LABELS[lifecycle],
       daysLeft: null,
-      urgencyLevel: "info",
-      displayText: "Application schedule not yet announced",
+      urgencyLevel: "closed",
+      displayText: `This opportunity was ${INACTIVE_LABELS[lifecycle].toLowerCase()} by the issuing authority`,
     };
   }
 
-  const openDate = opensAt ? (typeof opensAt === "string" ? new Date(opensAt) : opensAt) : null;
-  const closeDate = closesAt ? (typeof closesAt === "string" ? new Date(closesAt) : closesAt) : null;
+  const openDate = toDate(window.opensAt);
+  const closeDate = toDate(window.closesAt);
 
-  // If application has not opened yet
-  if (openDate && openDate.getTime() > now.getTime()) {
-    const daysUntilOpen = calculateDaysLeftIST(openDate, now);
-    return {
-      status: "NOT_ANNOUNCED",
-      statusLabel: "Opening Soon",
-      daysLeft: daysUntilOpen,
-      urgencyLevel: "info",
-      displayText: daysUntilOpen !== null && daysUntilOpen <= 1
-        ? "Opening tomorrow"
-        : `Opens in ${daysUntilOpen} days`,
-    };
-  }
-
-  // Application has no close date (open-ended scheme)
-  if (!closeDate) {
-    return {
-      status: "APPLICATION_OPEN",
-      statusLabel: "Ongoing / Open",
-      daysLeft: null,
-      urgencyLevel: "normal",
-      displayText: "Applications actively open (no deadline)",
-    };
-  }
-
-  const daysLeft = calculateDaysLeftIST(closeDate, now);
-
-  if (daysLeft === null || daysLeft < 0) {
+  if (closeDate && now.getTime() >= closeDate.getTime()) {
     return {
       status: "CLOSED",
-      statusLabel: "Application Closed",
-      daysLeft: 0,
+      statusLabel: "Applications closed",
+      daysLeft: null,
       urgencyLevel: "closed",
-      displayText: "Application window has closed",
+      displayText: `Applications closed on ${formatDateIST(closeDate)}`,
     };
   }
+
+  if (openDate && now.getTime() < openDate.getTime()) {
+    const daysUntilOpen = calculateDaysLeftIST(openDate, now) ?? 0;
+    return {
+      status: "UPCOMING",
+      statusLabel: "Not open yet",
+      daysLeft: daysUntilOpen,
+      urgencyLevel: "info",
+      displayText: daysUntilOpen <= 0
+        ? `Opens today (${formatDateTimeIST(openDate)})`
+        : daysUntilOpen === 1
+        ? "Opens tomorrow"
+        : `Opens on ${formatDateIST(openDate)}`,
+    };
+  }
+
+  if (!closeDate) {
+    if (window.isRolling) {
+      return {
+        status: "APPLICATION_OPEN",
+        statusLabel: "Open (no fixed deadline)",
+        daysLeft: null,
+        urgencyLevel: "normal",
+        displayText: "Enrolment is continuous; no fixed last date published",
+      };
+    }
+    if (openDate) {
+      return {
+        status: "APPLICATION_OPEN",
+        statusLabel: "Applications open",
+        daysLeft: null,
+        urgencyLevel: "normal",
+        displayText: "Last date not yet published",
+      };
+    }
+    return {
+      status: "NOT_ANNOUNCED",
+      statusLabel: "Dates not announced",
+      daysLeft: null,
+      urgencyLevel: "info",
+      displayText: "Application dates not yet announced officially",
+    };
+  }
+
+  const daysLeft = calculateDaysLeftIST(closeDate, now) ?? 0;
 
   if (daysLeft <= CLOSING_SOON_THRESHOLD_DAYS) {
     return {
       status: "CLOSING_SOON",
-      statusLabel: "Closing Soon",
+      statusLabel: "Registration closes soon",
       daysLeft,
       urgencyLevel: "urgent",
       displayText: daysLeft === 0
-        ? "Closes today!"
+        ? `Last day: closes ${formatDateTimeIST(closeDate)}`
         : daysLeft === 1
-        ? "1 day left to apply!"
+        ? "1 day left to apply"
         : `${daysLeft} days left to apply`,
     };
   }
 
   return {
     status: "APPLICATION_OPEN",
-    statusLabel: "Application Open",
+    statusLabel: "Applications open",
     daysLeft,
     urgencyLevel: "normal",
-    displayText: `${daysLeft} days remaining`,
+    displayText: `${daysLeft} days left to apply`,
   };
 }
 
@@ -107,43 +164,55 @@ export function evaluateApplicationStatus(
 export function evaluateExamScheduleStatus(
   examDate: Date | string | null | undefined,
   resultStatus: string | null | undefined,
-  now: Date = new Date()
+  now: Date = new Date(),
+  lifecycle: LifecycleState = "ACTIVE"
 ): StatusEvaluation {
+  if (lifecycle === "CANCELLED" || lifecycle === "WITHDRAWN") {
+    return {
+      status: "CANCELLED",
+      statusLabel: "Exam cancelled",
+      daysLeft: null,
+      urgencyLevel: "closed",
+      displayText: "This exam will not be held as notified",
+    };
+  }
+
   if (resultStatus && /result\s*declared|announced/i.test(resultStatus)) {
     return {
       status: "RESULT_ANNOUNCED",
-      statusLabel: "Result Declared",
+      statusLabel: "Result declared",
       daysLeft: null,
       urgencyLevel: "info",
       displayText: resultStatus,
     };
   }
 
-  if (!examDate) {
+  const date = toDate(examDate);
+  if (!date) {
     return {
       status: "NOT_ANNOUNCED",
-      statusLabel: "Exam Date TBA",
+      statusLabel: "Exam date not announced",
       daysLeft: null,
       urgencyLevel: "info",
       displayText: "Exam date to be announced officially",
     };
   }
 
-  const daysLeft = calculateDaysLeftIST(examDate, now);
+  const daysLeft = calculateDaysLeftIST(date, now) ?? 0;
 
-  if (daysLeft === null || daysLeft < 0) {
+  if (daysLeft < 0) {
     return {
       status: "EXAM_COMPLETED",
-      statusLabel: "Exam Completed",
-      daysLeft: 0,
+      statusLabel: "Exam held",
+      daysLeft: null,
       urgencyLevel: "closed",
-      displayText: "Exam has concluded",
+      displayText: `Exam was held on ${formatDateIST(date)}`,
     };
   }
 
   return {
     status: "EXAM_UPCOMING",
-    statusLabel: "Exam Upcoming",
+    statusLabel: "Exam upcoming",
     daysLeft,
     urgencyLevel: daysLeft <= 14 ? "urgent" : "normal",
     displayText: daysLeft === 0
@@ -152,4 +221,13 @@ export function evaluateExamScheduleStatus(
       ? "Exam tomorrow"
       : `Exam in ${daysLeft} days`,
   };
+}
+
+/** Scheme/programme end is a different fact from the application deadline. */
+export function describeProgramEnd(programEndsAt: Date | string | null | undefined, now: Date = new Date()): string | null {
+  const d = toDate(programEndsAt);
+  if (!d) return null;
+  return d.getTime() <= now.getTime()
+    ? `Programme ended on ${formatDateIST(d)}`
+    : `Programme ending on ${formatDateIST(d)}`;
 }

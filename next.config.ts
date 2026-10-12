@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 
+// Upgrading requests only makes sense when the site itself is served over https (not http://localhost).
+const httpsSite = (process.env.NEXT_PUBLIC_APP_URL ?? "").startsWith("https://");
+
 const cspHeader = `
   default-src 'self';
   script-src 'self' 'unsafe-eval' 'unsafe-inline';
@@ -10,11 +13,13 @@ const cspHeader = `
   base-uri 'self';
   form-action 'self';
   frame-ancestors 'none';
-  upgrade-insecure-requests;
+  ${httpsSite ? "upgrade-insecure-requests;" : ""}
 `.replace(/\s{2,}/g, " ").trim();
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Pin the workspace root (a stray lockfile in a parent folder otherwise confuses Turbopack).
+  turbopack: { root: import.meta.dirname },
   async headers() {
     return [
       {
