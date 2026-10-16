@@ -46,3 +46,6 @@ next-env.d.ts
 
 # scheduled-check logs
 /logs/
+
+# local postgres cluster
+/.pgdata/
