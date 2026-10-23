@@ -27,15 +27,6 @@ function parseAdminCredentials(): AdminCredential[] {
     }
   }
 
-  // Also include the primary admin user if not already defined
-  const primaryHash = edgeSha256Hex(env.ADMIN_SECRET);
-  if (!creds.some((c) => c.username === "admin")) {
-    creds.push({
-      username: "admin",
-      secretHash: primaryHash,
-    });
-  }
-
   return creds;
 }
 
@@ -67,12 +58,6 @@ export function verifyAdminCredentials(usernameInput: string, secretKeyInput: st
         return { valid: true, username: cred.username };
       }
     }
-  }
-
-  // If username wasn't specified or was "admin", check against adminSecret directly
-  const defaultAdminHash = edgeSha256Hex(authConfig.adminSecret);
-  if (normalizedUsername === "admin" && edgeTimingSafeEqual(inputHash, defaultAdminHash)) {
-    return { valid: true, username: "admin" };
   }
 
   return { valid: false, username: normalizedUsername };

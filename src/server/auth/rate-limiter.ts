@@ -158,3 +158,10 @@ export const apiRateLimiter = new ApiRateLimiter({
   windowMs: 60 * 1000,
 });
 
+// Contact and grievance form rate limiter (5 submissions per 15 minutes per IP)
+export const contactRateLimiter = new InMemoryRateLimiter({
+  maxAttempts: 5,
+  windowMs: 15 * 60 * 1000,
+  lockoutMs: 15 * 60 * 1000,
+});
+

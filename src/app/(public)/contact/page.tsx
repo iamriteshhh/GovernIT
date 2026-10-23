@@ -18,7 +18,7 @@ export default function ContactPage() {
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
@@ -43,10 +43,31 @@ export default function ContactPage() {
       return;
     }
 
-    // ponytail: no contact backend yet (needs approval). Never pretend a message was sent.
-    setErrorMessage(
-      "Sorry, this online form is not connected yet, so your message was NOT sent. Please report the correction to the official department directly for now."
-    );
+    setStatus("submitting");
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          renderedAt: formRenderedAt,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrorMessage(data.error || "Failed to submit grievance. Please try again later.");
+        setStatus("error");
+        return;
+      }
+
+      setStatus("success");
+    } catch {
+      setErrorMessage("Network error occurred. Please check your connection or contact editorial@governit.in directly.");
+      setStatus("error");
+    }
   };
 
   return (
